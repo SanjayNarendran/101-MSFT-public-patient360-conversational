@@ -1,0 +1,858 @@
+{
+ "default_model": "claude-sonnet-5.5",
+ "i2b2": {
+  "rules": "Cohort discovery over an i2b2 star schema (Contoso Health synthetic data, Epic Clarity -> OMOP -> i2b2).\nWorkflow: (1) find concepts with search_ontology / browse_ontology (and list_modifiers for modifiers such as\nnodule size); (2) build an i2b2 query definition from the returned item_key values; (3) optionally check it with\npreview_query; (4) run_i2b2_query with the researcher's question; (5) show the QUERY_MASTER_ID, the i2b2 query\nsummary and the obfuscated counts; iterate as asked; (6) only when the researcher says so, submit_request.\nRules: use only item_key values returned by the ontology tools; panels are ANDed and items inside a panel are ORed;\ninvert a panel for NOT; with SAMEVISIT timing, give panels that aren't about the same visit (such as \"excluding\nanyone with X\") panel_timing ANY; counts are obfuscated (N\u00b13, 3 or fewer shown as 0) and patient-level data is never\nreturned. Approval happens on the request's approval page; delivery is a separate manual step.\n\nYou are answering inside the Cohort Discovery app, beside the chat the researcher sees:\n- the i2b2 query you build, drawn as panels of chips (it updates when you preview or run a query);\n- after a run, the obfuscated patient count, breakdown charts (age, gender, race, vital status) and the query history.\nSo keep replies short and don't repeat what the page shows:\n- After a run, give the QUERY_MASTER_ID and the count as \"about N (\u00b13)\" (or \"fewer than 4\"), then 1-3 sentences on\n  how you read the question: which folders or codes, which age bands, units and dates. Don't list the breakdowns.\n- If a message starts with a [Query builder] block, that is the query on the page now; the researcher may have edited\n  it by hand. Start from it when asked to refine or explain.\n- Only submit a data request when the researcher asks; the page also has a Submit button.\n- Don't mention tool names, JSON or DAX unless asked how you got the answer. Use light markdown.\n- To explain a result visually, call show_visual with a small Vega-Lite spec built only from numbers a tool returned\n  (counts are obfuscated: label them \"patients (\u00b13)\"). Prefer one clear bar or line chart over several.",
+  "tools": [
+   {
+    "name": "search_ontology",
+    "description": "Searches i2b2 ontology terms by name or code. under: an item_key or path to search below.\n    Returns item_key, path, name, kind (folder/leaf/modifier), patients (true count of the term) and numeric_values.",
+    "parameters": {
+     "properties": {
+      "text": {
+       "title": "Text",
+       "type": "string"
+      },
+      "under": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Under"
+      },
+      "limit": {
+       "default": 25,
+       "title": "Limit",
+       "type": "integer"
+      }
+     },
+     "required": [
+      "text"
+     ],
+     "title": "search_ontologyArguments",
+     "type": "object"
+    }
+   },
+   {
+    "name": "browse_ontology",
+    "description": "Lists the children of an ontology folder (item_key or path); without a path, the top-level categories.",
+    "parameters": {
+     "properties": {
+      "path": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Path"
+      }
+     },
+     "title": "browse_ontologyArguments",
+     "type": "object"
+    }
+   },
+   {
+    "name": "list_modifiers",
+    "description": "Lists i2b2 modifiers (e.g. nodule size, smoking detail) with the item paths they apply to.",
+    "parameters": {
+     "properties": {},
+     "title": "list_modifiersArguments",
+     "type": "object"
+    }
+   },
+   {
+    "name": "preview_query",
+    "description": "Validates a query definition and returns its i2b2 name, a readable summary and the i2b2 XML, without running it.",
+    "parameters": {
+     "$defs": {
+      "DateConstraint": {
+       "properties": {
+        "date_from": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null,
+         "description": "YYYY-MM-DD, on the observation start date",
+         "title": "Date From"
+        },
+        "date_to": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null,
+         "description": "YYYY-MM-DD",
+         "title": "Date To"
+        }
+       },
+       "title": "DateConstraint",
+       "type": "object"
+      },
+      "Item": {
+       "properties": {
+        "item_key": {
+         "description": "An item_key returned by search_ontology or browse_ontology, e.g. \\\\i2b2_diagnoses\\i2b2\\Diagnoses\\...\\",
+         "title": "Item Key",
+         "type": "string"
+        },
+        "item_name": {
+         "default": "",
+         "title": "Item Name",
+         "type": "string"
+        },
+        "constrain_by_value": {
+         "anyOf": [
+          {
+           "$ref": "#/$defs/ValueConstraint"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null,
+         "description": "Only for items with numeric_values"
+        },
+        "constrain_by_modifier": {
+         "anyOf": [
+          {
+           "$ref": "#/$defs/ModifierConstraint"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null
+        },
+        "constrain_by_date": {
+         "anyOf": [
+          {
+           "$ref": "#/$defs/DateConstraint"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null
+        }
+       },
+       "required": [
+        "item_key"
+       ],
+       "title": "Item",
+       "type": "object"
+      },
+      "ModifierConstraint": {
+       "properties": {
+        "modifier_key": {
+         "description": "A modifier_key from list_modifiers whose applies_to matches the item",
+         "title": "Modifier Key",
+         "type": "string"
+        },
+        "modifier_name": {
+         "default": "",
+         "title": "Modifier Name",
+         "type": "string"
+        },
+        "constrain_by_value": {
+         "anyOf": [
+          {
+           "$ref": "#/$defs/ValueConstraint"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null
+        }
+       },
+       "required": [
+        "modifier_key"
+       ],
+       "title": "ModifierConstraint",
+       "type": "object"
+      },
+      "Panel": {
+       "properties": {
+        "items": {
+         "description": "Items are ORed",
+         "items": {
+          "$ref": "#/$defs/Item"
+         },
+         "title": "Items",
+         "type": "array"
+        },
+        "invert": {
+         "default": 0,
+         "description": "1 = exclude patients matching this panel (NOT)",
+         "enum": [
+          0,
+          1
+         ],
+         "title": "Invert",
+         "type": "integer"
+        },
+        "panel_timing": {
+         "anyOf": [
+          {
+           "enum": [
+            "ANY",
+            "SAMEVISIT"
+           ],
+           "type": "string"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null,
+         "description": "With query_timing SAMEVISIT a panel defaults to SAMEVISIT. Set ANY on panels that may match at any time, e.g. an exclusion of anyone ever diagnosed with a condition.",
+         "title": "Panel Timing"
+        },
+        "total_item_occurrences": {
+         "default": 1,
+         "description": "Minimum number of facts (visits for visit items)",
+         "minimum": 1,
+         "title": "Total Item Occurrences",
+         "type": "integer"
+        },
+        "panel_date_from": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null,
+         "title": "Panel Date From"
+        },
+        "panel_date_to": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null,
+         "title": "Panel Date To"
+        }
+       },
+       "required": [
+        "items"
+       ],
+       "title": "Panel",
+       "type": "object"
+      },
+      "QueryDefinition": {
+       "properties": {
+        "panels": {
+         "description": "Panels are ANDed",
+         "items": {
+          "$ref": "#/$defs/Panel"
+         },
+         "title": "Panels",
+         "type": "array"
+        },
+        "query_timing": {
+         "default": "ANY",
+         "description": "SAMEVISIT joins SAMEVISIT panels on the same encounter",
+         "enum": [
+          "ANY",
+          "SAMEVISIT"
+         ],
+         "title": "Query Timing",
+         "type": "string"
+        },
+        "query_name": {
+         "default": "",
+         "description": "Leave empty for the i2b2 default name",
+         "title": "Query Name",
+         "type": "string"
+        }
+       },
+       "required": [
+        "panels"
+       ],
+       "title": "QueryDefinition",
+       "type": "object"
+      },
+      "ValueConstraint": {
+       "properties": {
+        "value_operator": {
+         "description": "NUMBER: GT, GE, LT, LE, EQ, NE or BETWEEN. TEXT: EQ, NE, IN, LIKE[contains], LIKE[begin], LIKE[end], LIKE[exact].",
+         "title": "Value Operator",
+         "type": "string"
+        },
+        "value_constraint": {
+         "description": "The value, e.g. '6'; BETWEEN as '6 and 10'; IN as 'A','B'.",
+         "title": "Value Constraint",
+         "type": "string"
+        },
+        "value_type": {
+         "default": "NUMBER",
+         "enum": [
+          "NUMBER",
+          "TEXT"
+         ],
+         "title": "Value Type",
+         "type": "string"
+        },
+        "value_unit_of_measure": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null,
+         "title": "Value Unit Of Measure"
+        }
+       },
+       "required": [
+        "value_operator",
+        "value_constraint"
+       ],
+       "title": "ValueConstraint",
+       "type": "object"
+      }
+     },
+     "properties": {
+      "query_definition": {
+       "$ref": "#/$defs/QueryDefinition"
+      }
+     },
+     "required": [
+      "query_definition"
+     ],
+     "title": "preview_queryArguments",
+     "type": "object"
+    }
+   },
+   {
+    "name": "run_i2b2_query",
+    "description": "Runs an i2b2 query on the Cohort Discovery semantic model and records it in the CRC store.\n    nl_question: the researcher's question in their own words. Returns query_master_id, query_name, the obfuscated\n    patient count and breakdowns (age, gender, race, vital status), the summary and the i2b2 XML.",
+    "parameters": {
+     "$defs": {
+      "DateConstraint": {
+       "properties": {
+        "date_from": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null,
+         "description": "YYYY-MM-DD, on the observation start date",
+         "title": "Date From"
+        },
+        "date_to": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null,
+         "description": "YYYY-MM-DD",
+         "title": "Date To"
+        }
+       },
+       "title": "DateConstraint",
+       "type": "object"
+      },
+      "Item": {
+       "properties": {
+        "item_key": {
+         "description": "An item_key returned by search_ontology or browse_ontology, e.g. \\\\i2b2_diagnoses\\i2b2\\Diagnoses\\...\\",
+         "title": "Item Key",
+         "type": "string"
+        },
+        "item_name": {
+         "default": "",
+         "title": "Item Name",
+         "type": "string"
+        },
+        "constrain_by_value": {
+         "anyOf": [
+          {
+           "$ref": "#/$defs/ValueConstraint"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null,
+         "description": "Only for items with numeric_values"
+        },
+        "constrain_by_modifier": {
+         "anyOf": [
+          {
+           "$ref": "#/$defs/ModifierConstraint"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null
+        },
+        "constrain_by_date": {
+         "anyOf": [
+          {
+           "$ref": "#/$defs/DateConstraint"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null
+        }
+       },
+       "required": [
+        "item_key"
+       ],
+       "title": "Item",
+       "type": "object"
+      },
+      "ModifierConstraint": {
+       "properties": {
+        "modifier_key": {
+         "description": "A modifier_key from list_modifiers whose applies_to matches the item",
+         "title": "Modifier Key",
+         "type": "string"
+        },
+        "modifier_name": {
+         "default": "",
+         "title": "Modifier Name",
+         "type": "string"
+        },
+        "constrain_by_value": {
+         "anyOf": [
+          {
+           "$ref": "#/$defs/ValueConstraint"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null
+        }
+       },
+       "required": [
+        "modifier_key"
+       ],
+       "title": "ModifierConstraint",
+       "type": "object"
+      },
+      "Panel": {
+       "properties": {
+        "items": {
+         "description": "Items are ORed",
+         "items": {
+          "$ref": "#/$defs/Item"
+         },
+         "title": "Items",
+         "type": "array"
+        },
+        "invert": {
+         "default": 0,
+         "description": "1 = exclude patients matching this panel (NOT)",
+         "enum": [
+          0,
+          1
+         ],
+         "title": "Invert",
+         "type": "integer"
+        },
+        "panel_timing": {
+         "anyOf": [
+          {
+           "enum": [
+            "ANY",
+            "SAMEVISIT"
+           ],
+           "type": "string"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null,
+         "description": "With query_timing SAMEVISIT a panel defaults to SAMEVISIT. Set ANY on panels that may match at any time, e.g. an exclusion of anyone ever diagnosed with a condition.",
+         "title": "Panel Timing"
+        },
+        "total_item_occurrences": {
+         "default": 1,
+         "description": "Minimum number of facts (visits for visit items)",
+         "minimum": 1,
+         "title": "Total Item Occurrences",
+         "type": "integer"
+        },
+        "panel_date_from": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null,
+         "title": "Panel Date From"
+        },
+        "panel_date_to": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null,
+         "title": "Panel Date To"
+        }
+       },
+       "required": [
+        "items"
+       ],
+       "title": "Panel",
+       "type": "object"
+      },
+      "QueryDefinition": {
+       "properties": {
+        "panels": {
+         "description": "Panels are ANDed",
+         "items": {
+          "$ref": "#/$defs/Panel"
+         },
+         "title": "Panels",
+         "type": "array"
+        },
+        "query_timing": {
+         "default": "ANY",
+         "description": "SAMEVISIT joins SAMEVISIT panels on the same encounter",
+         "enum": [
+          "ANY",
+          "SAMEVISIT"
+         ],
+         "title": "Query Timing",
+         "type": "string"
+        },
+        "query_name": {
+         "default": "",
+         "description": "Leave empty for the i2b2 default name",
+         "title": "Query Name",
+         "type": "string"
+        }
+       },
+       "required": [
+        "panels"
+       ],
+       "title": "QueryDefinition",
+       "type": "object"
+      },
+      "ValueConstraint": {
+       "properties": {
+        "value_operator": {
+         "description": "NUMBER: GT, GE, LT, LE, EQ, NE or BETWEEN. TEXT: EQ, NE, IN, LIKE[contains], LIKE[begin], LIKE[end], LIKE[exact].",
+         "title": "Value Operator",
+         "type": "string"
+        },
+        "value_constraint": {
+         "description": "The value, e.g. '6'; BETWEEN as '6 and 10'; IN as 'A','B'.",
+         "title": "Value Constraint",
+         "type": "string"
+        },
+        "value_type": {
+         "default": "NUMBER",
+         "enum": [
+          "NUMBER",
+          "TEXT"
+         ],
+         "title": "Value Type",
+         "type": "string"
+        },
+        "value_unit_of_measure": {
+         "anyOf": [
+          {
+           "type": "string"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "default": null,
+         "title": "Value Unit Of Measure"
+        }
+       },
+       "required": [
+        "value_operator",
+        "value_constraint"
+       ],
+       "title": "ValueConstraint",
+       "type": "object"
+      }
+     },
+     "properties": {
+      "query_definition": {
+       "$ref": "#/$defs/QueryDefinition"
+      },
+      "nl_question": {
+       "title": "Nl Question",
+       "type": "string"
+      }
+     },
+     "required": [
+      "query_definition",
+      "nl_question"
+     ],
+     "title": "run_i2b2_queryArguments",
+     "type": "object"
+    }
+   },
+   {
+    "name": "list_queries",
+    "description": "Lists previous i2b2 queries (newest first) with their QUERY_MASTER_ID and obfuscated counts.",
+    "parameters": {
+     "properties": {
+      "limit": {
+       "default": 20,
+       "title": "Limit",
+       "type": "integer"
+      },
+      "mine": {
+       "default": true,
+       "title": "Mine",
+       "type": "boolean"
+      }
+     },
+     "title": "list_queriesArguments",
+     "type": "object"
+    }
+   },
+   {
+    "name": "get_query",
+    "description": "Returns one query: its question, definition, summary, i2b2 XML and obfuscated count.",
+    "parameters": {
+     "properties": {
+      "query_master_id": {
+       "title": "Query Master Id",
+       "type": "integer"
+      }
+     },
+     "required": [
+      "query_master_id"
+     ],
+     "title": "get_queryArguments",
+     "type": "object"
+    }
+   },
+   {
+    "name": "submit_request",
+    "description": "Turns a query into a data request (status PENDING) and links it to its approval page, where it is approved or\n    rejected. Call only when the researcher asks to submit. Returns the request and REPORT_URL (the approval page).",
+    "parameters": {
+     "properties": {
+      "query_master_id": {
+       "title": "Query Master Id",
+       "type": "integer"
+      },
+      "title": {
+       "title": "Title",
+       "type": "string"
+      }
+     },
+     "required": [
+      "query_master_id",
+      "title"
+     ],
+     "title": "submit_requestArguments",
+     "type": "object"
+    }
+   },
+   {
+    "name": "request_status",
+    "description": "Returns a data request's status (PENDING, APPROVED, REJECTED, DELIVERED), who decided and when, and its\n    approval page (REPORT_URL).",
+    "parameters": {
+     "properties": {
+      "query_master_id": {
+       "title": "Query Master Id",
+       "type": "integer"
+      }
+     },
+     "required": [
+      "query_master_id"
+     ],
+     "title": "request_statusArguments",
+     "type": "object"
+    }
+   },
+   {
+    "name": "show_visual",
+    "description": "Draws a chart in the chat to explain a result: a Vega-Lite spec whose data are numbers you already have (the obfuscated counts and breakdowns from run_i2b2_query, get_query or explore_dax). Use it when a picture tells the story better than a sentence, e.g. comparing cohorts, a breakdown, or counts over time. Never invent or estimate numbers.",
+    "parameters": {
+     "type": "object",
+     "required": [
+      "title",
+      "spec"
+     ],
+     "properties": {
+      "title": {
+       "type": "string",
+       "description": "A short, plain title."
+      },
+      "spec": {
+       "type": "object",
+       "description": "A Vega-Lite spec with inline data (data.values). Leave out width, colours and fonts: the page sets them. Bar, line and point marks work best."
+      },
+      "caption": {
+       "type": "string",
+       "description": "Optional one-line note shown under the chart."
+      }
+     }
+    }
+   }
+  ]
+ },
+ "dax": {
+  "rules": "\nYou are in the exploration mode of the Cohort Discovery app. Answer cohort-count questions by writing DAX against the\nCohort Discovery (i2b2) semantic model with explore_dax; read the model with describe_model first (tables, columns,\nmeasures and its AI instructions on how to count a cohort), and use search_ontology to find terms.\n- explore_dax returns only patient counts, obfuscated as for an i2b2 DATA_OBFSC user; patient-level columns, other\n  numbers and more than 100 rows are refused, so always aggregate to counts.\n- Count distinct patients: COUNTROWS(patient_dimension) for demographics, DISTINCTCOUNT(observation_fact[patient_num])\n  or COUNTROWS of a VALUES(...) patient set for facts.\n- A column added with ADDCOLUMNS or SELECTCOLUMNS is not a filter: grouping by it and then counting with CALCULATE\n  repeats the whole total in every group. For bands or other computed groups, write one filtered count per group, e.g.\n  UNION(ROW(\"Band\", \"50-64\", \"Patients\", CALCULATE(COUNTROWS(patient_dimension),\n  patient_dimension[age_in_years_num] >= 50, patient_dimension[age_in_years_num] <= 64)), ROW(...)), or group by model\n  columns with SUMMARIZECOLUMNS(..., \"Patients\", <count>).\n- Check every result before you answer: groups that don't overlap can't add up to more than patients_in_model, and a\n  subgroup can't be larger than its parent. If a result fails the check, fix the DAX and run it again.\n- Report counts as \"about N (\u00b13)\" and 0 as \"fewer than 4\". Show the DAX you ran in a dax code block, briefly say how\n  you read the question, and keep the answer short.\n- Nothing in this mode is recorded or can become a data request; to record a query with a QUERY_MASTER_ID, the\n  researcher switches to the i2b2 mode.\n- Don't mention tool names.\n- To explain a result visually, call show_visual with a small Vega-Lite spec built only from numbers a tool returned\n  (counts are obfuscated: label them \"patients (\u00b13)\"). Prefer one clear bar or line chart over several.",
+  "tools": [
+   {
+    "name": "describe_model",
+    "description": "The Cohort Discovery (i2b2) semantic model: tables, columns, measures, relationships and its AI instructions on how to count a cohort. Read it before writing DAX.",
+    "parameters": {
+     "type": "object",
+     "properties": {}
+    }
+   },
+   {
+    "name": "explore_dax",
+    "description": "Runs one DAX query (EVALUATE ...) on the Cohort Discovery semantic model and returns its rows with every number obfuscated as an i2b2 patient count. Return counts only, at most 100 rows.",
+    "parameters": {
+     "type": "object",
+     "required": [
+      "dax",
+      "purpose"
+     ],
+     "properties": {
+      "dax": {
+       "type": "string",
+       "description": "A complete DAX query (DEFINE ... EVALUATE ...)."
+      },
+      "purpose": {
+       "type": "string",
+       "description": "One line: what this query counts."
+      }
+     }
+    }
+   },
+   {
+    "name": "search_ontology",
+    "description": "Searches i2b2 ontology terms by name or code. under: an item_key or path to search below.\n    Returns item_key, path, name, kind (folder/leaf/modifier), patients (true count of the term) and numeric_values.",
+    "parameters": {
+     "properties": {
+      "text": {
+       "title": "Text",
+       "type": "string"
+      },
+      "under": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Under"
+      },
+      "limit": {
+       "default": 25,
+       "title": "Limit",
+       "type": "integer"
+      }
+     },
+     "required": [
+      "text"
+     ],
+     "title": "search_ontologyArguments",
+     "type": "object"
+    }
+   },
+   {
+    "name": "browse_ontology",
+    "description": "Lists the children of an ontology folder (item_key or path); without a path, the top-level categories.",
+    "parameters": {
+     "properties": {
+      "path": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "default": null,
+       "title": "Path"
+      }
+     },
+     "title": "browse_ontologyArguments",
+     "type": "object"
+    }
+   },
+   {
+    "name": "show_visual",
+    "description": "Draws a chart in the chat to explain a result: a Vega-Lite spec whose data are numbers you already have (the obfuscated counts and breakdowns from run_i2b2_query, get_query or explore_dax). Use it when a picture tells the story better than a sentence, e.g. comparing cohorts, a breakdown, or counts over time. Never invent or estimate numbers.",
+    "parameters": {
+     "type": "object",
+     "required": [
+      "title",
+      "spec"
+     ],
+     "properties": {
+      "title": {
+       "type": "string",
+       "description": "A short, plain title."
+      },
+      "spec": {
+       "type": "object",
+       "description": "A Vega-Lite spec with inline data (data.values). Leave out width, colours and fonts: the page sets them. Bar, line and point marks work best."
+      },
+      "caption": {
+       "type": "string",
+       "description": "Optional one-line note shown under the chart."
+      }
+     }
+    }
+   }
+  ]
+ }
+}

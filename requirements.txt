@@ -1,0 +1,30 @@
+pandas>=2.2
+pyarrow>=17
+numpy>=2.0
+requests>=2.32
+mssql-python>=1.17
+azure-identity>=1.19
+# Stage 2: imaging sources (IDC data version v25), DICOM, documents
+idc-index==0.13.4
+idc-index-data==25.0.5
+pydicom>=3.0
+s5cmd>=0.3
+deltalake>=1.0
+pillow>=11
+# Stage 3: Silver OMOP and Gold i2b2 ETL
+duckdb>=1.4
+# Stage 4: cohort discovery MCP server for GitHub Copilot (mcp 2.x: MCPServer)
+mcp>=2.3,<3
+# Stage 4b: local cohort discovery app (GitHub Copilot SDK; downloads its Copilot runtime on first run)
+github-copilot-sdk>=1.0.28,<2
+starlette>=1.10
+uvicorn>=0.54
+# Patient 360 viewer files (scripts/25_patient360_viewers.py)
+SimpleITK
+nibabel
+scipy
+openslide-python
+openslide-bin
+pylibjpeg
+pylibjpeg-openjpeg
+pylibjpeg-libjpeg

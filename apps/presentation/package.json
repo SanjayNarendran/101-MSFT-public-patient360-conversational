@@ -1,0 +1,18 @@
+{
+  "name": "cohort-presentation",
+  "description": "The Fabric and medical cohort demo presentation (presentation/) hosted as a Microsoft Fabric App (Rayfin static hosting).",
+  "license": "MIT",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:standalone": "node scripts/standalone.mjs",
+    "preview": "node scripts/build.mjs && python3 -m http.server 5173 --bind 127.0.0.1 --directory dist",
+    "deploy": "rayfin up",
+    "deploy:static": "rayfin up staticapp deploy"
+  },
+  "devDependencies": {
+    "@microsoft/rayfin-cli": "^1.36.2"
+  }
+}

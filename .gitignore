@@ -1,0 +1,16 @@
+# Your tenant's settings and the IDs of what the setup scripts create (see docs/setup.md, section 3). They describe
+# your tenant, so they stay on your machine.
+config/settings.env
+config/settings.*.env
+!config/settings.example.env
+config/.cohort-env
+
+# Everything downloaded or generated: the setup scripts and the research pipelines recreate it.
+data/
+research/*/work/
+
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+node_modules/

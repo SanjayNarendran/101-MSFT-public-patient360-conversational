@@ -1,0 +1,25 @@
+# Icons
+
+Product icons used in the presentation's Fabric figure, unmodified, with where each one comes from and the terms it is used under.
+
+| File | Icon | Source | Terms |
+|---|---|---|---|
+| `fabric.svg`, `databases.svg`, `data-factory.svg`, `analytics.svg`, `real-time-intelligence.svg`, `power-bi.svg`, `copilot.svg`, `onelake.svg`, `rayfin.svg`, `lakehouse.svg`, `notebook.svg`, `pipeline.svg`, `report.svg` | Microsoft Fabric, its workloads, Copilot, OneLake and Rayfin, and the lakehouse, notebook, data pipeline and report item icons used in sections 01 to 08 (`analytics.svg` is the Fabric data science workload icon; `databases.svg` also marks Bronze_PACS) | npm package [`@fabric-msft/svg-icons`](https://www.npmjs.com/package/@fabric-msft/svg-icons) 12.0.0, 48 px colour icons | [Microsoft Fabric icon terms](https://learn.microsoft.com/fabric/fundamentals/icons): permitted in architectural diagrams, training materials and documentation |
+| `folder.svg`, `folder-shortcut.svg`, `table.svg` | The folder, shortcut folder and table icons of the lakehouse explorer in section 05 (`folder_20_non-item.svg`, `folder_shortcut_20_regular.svg`, `table_header_20_regular.svg`; the two single-colour ones are drawn inline in the page's text colour) | npm package `@fabric-msft/svg-icons` 12.0.0, 20 px icons | as above |
+| `iq.png` | Fabric IQ | Supplied by the presenter from Microsoft's Fabric slides (there is no IQ icon in the public Fabric icon set); transparent margin trimmed and scaled to 160 px tall | Microsoft product icon, used to identify Fabric IQ |
+| `mirrored-catalog.svg` | The mirrored Azure Databricks catalog in section 01 | npm package `@fabric-msft/svg-icons` 12.0.0, `mirrored_catalog_48_item.svg` | Microsoft Fabric icon terms, as in the first row |
+| `functions.svg` | Rayfin functions in section 07, shown with the Fabric user data functions item icon | npm package `@fabric-msft/svg-icons` 12.0.0, `user_data_functions_48_item.svg` | Microsoft Fabric icon terms, as in the first row |
+| `governance-purview.svg` | Governance, shown with the Microsoft Purview icon | same package, `purview_48_color.svg` | as above |
+| `azure-storage.svg` | Azure (Storage accounts) | [Azure architecture icons](https://learn.microsoft.com/azure/architecture/icons/) V24, `10086-icon-service-Storage-Accounts.svg` | Azure icon terms: permitted in architectural diagrams, training materials and documentation |
+| `on-premises.svg` | On‑premises (Server farm) | Azure architecture icons V24, `10835-icon-service-Server-Farm.svg` | as above |
+| `dataverse.svg` | Dataverse | [Microsoft Power Platform icons](https://learn.microsoft.com/power-platform/guidance/icons), `Dataverse_scalable.svg` | Power Platform icon terms: permitted in architectural diagrams, training materials and documentation |
+| `amazon-s3.svg` | Amazon S3 | [AWS Architecture Icons](https://aws.amazon.com/architecture/icons/) (July 2026 package), `Arch_Amazon-Simple-Storage-Service_64.svg` | AWS permits these icons in architecture diagrams and presentations |
+| `google-cloud-storage.svg` | Google Cloud (Cloud Storage) | [Google Cloud product icons](https://cloud.google.com/icons), core product icons, `Cloud_Storage-512-color.svg` | Google Cloud's official icon library for diagrams and documentation |
+| `databricks.svg`, `snowflake.svg` | Databricks, Snowflake | [Simple Icons](https://simpleicons.org) 16.36.0, filled with each brand's colour (#FF3621, #29B5E8) | Simple Icons is CC0; the marks remain trademarks of Databricks, Inc. and Snowflake Inc. |
+| `container-apps.svg` | Azure Container Apps, which hosts Patient 360's chat relay in section 08 | Azure architecture icons V24, `02989-icon-service-Container-Apps-Environments.svg` | Azure icon terms: permitted in architectural diagrams, training materials and documentation |
+| `sql-server.svg` | SQL Server on premises, on the Epic stack in section 01 | Azure architecture icons V24, `10132-icon-service-SQL-Server.svg` | Azure icon terms: permitted in architectural diagrams, training materials and documentation |
+| `microsoft-foundry.svg` | Microsoft Foundry | Azure architecture icons V24, `035746832-icon-service-AI-Foundry.svg` | Azure icon terms: permitted in architectural diagrams, training materials and documentation |
+| `github-copilot.svg` | GitHub Copilot | [Primer Octicons](https://github.com/primer/octicons) `copilot-48.svg`, filled #1F2328 (the page inverts it to white on the dark theme, as GitHub's single-colour mark allows) | MIT, © GitHub Inc.; GitHub Copilot is a trademark of GitHub, Inc. |
+| `epic.svg` | Epic (shown for Epic Cogito Cloud in section 01) | [Wikimedia Commons, `Epic_Systems.svg`](https://commons.wikimedia.org/wiki/File:Epic_Systems.svg); the Inkscape metadata removed and the viewBox trimmed to the wordmark, path and colour (#BA0239) unchanged | Public domain on Commons (a text logo); Epic is a trademark of Epic Systems Corporation |
+
+All product names, logos and icons are trademarks of their owners. They identify the products described and don't imply endorsement.

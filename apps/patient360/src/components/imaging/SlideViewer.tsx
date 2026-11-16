@@ -1,0 +1,436 @@
+import OpenSeadragon from 'openseadragon';
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  type ReactNode,
+} from 'react';
+
+import type { Locator, Slide, SlideOverlay } from './types';
+
+export interface ViewState {
+  x: number;
+  y: number;
+  /** Image zoom: 1 = one screen pixel per scanned pixel (full objective magnification). */
+  zoom: number;
+}
+
+export interface ViewerStatus {
+  magnification: number | null;
+  umPerPixel: number | null;
+  tilesLoaded: number;
+  tilesFailed: number;
+  firstTileMs: number | null;
+  touring: boolean;
+}
+
+/**
+ * Position shared between linked viewers: the centre in units of the image width, and the real-world scale
+ * (micrometres per screen pixel) so both slides show the same magnification. `zoom` (viewport zoom) is the
+ * fallback when a slide has no recorded pixel size.
+ */
+export interface SyncView {
+  x: number;
+  y: number;
+  zoom: number;
+  umPerScreenPx: number | null;
+}
+
+export interface OverlayDisplay {
+  visible: boolean;
+  /** 0 to 1. */
+  opacity: number;
+}
+
+export interface SlideViewerHandle {
+  home: () => void;
+  /** Moves to a linked viewer's position without reporting it back. */
+  syncTo: (view: SyncView) => void;
+  zoomToMagnification: (mag: number) => void;
+  getView: () => ViewState | null;
+  flyTo: (view: ViewState) => void;
+  startTour: () => void;
+  stopTour: () => void;
+}
+
+export interface ViewerPin {
+  id: string;
+  title: string;
+  x: number;
+  y: number;
+}
+
+/** The catalog slide, or another slide of the same case whose files live under `prefix`. */
+export type ViewerSlide = Slide & { prefix?: string; imageKey?: string; overlays?: SlideOverlay[] };
+
+interface SlideViewerProps {
+  slide: ViewerSlide;
+  /** URLs of the slide's files, from paths relative to its folder; read at request time, so refreshed SAS apply. */
+  files: Locator;
+  pins?: ViewerPin[];
+  onStatus: (status: ViewerStatus) => void;
+  onPinClick?: (id: string) => void;
+  onAccessExpired?: () => void;
+  children?: ReactNode;
+  /** Fluorescence slides: marker id -> shown. */
+  channelVisibility?: Record<string, boolean>;
+  /** AI overlay id -> display; overlays not listed stay hidden. */
+  overlayDisplay?: Record<string, OverlayDisplay>;
+  /** Reports user-driven moves, for linked side-by-side viewing. */
+  onViewChange?: (view: SyncView) => void;
+}
+
+const NORMAL_ANIMATION = 1.2;
+const TOUR_ANIMATION = 2.6;
+
+function sleep(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const t = window.setTimeout(resolve, ms);
+    signal.addEventListener('abort', () => {
+      window.clearTimeout(t);
+      reject(new DOMException('aborted', 'AbortError'));
+    });
+  });
+}
+
+/**
+ * `tilesPath` is relative to the catalog slide's folder: `slide_files`, `channels/<marker>/slide_files`,
+ * `case/<image>/slide_files` or an overlay pyramid. `pyramid` overrides the tile grid (overlays).
+ */
+function buildTileSource(
+  slide: ViewerSlide,
+  filesRef: { current: Locator },
+  tilesPath = `${slide.prefix ?? ''}slide_files`,
+  pyramid: { tileSize?: number; minLevel?: number; format?: string } = {}
+): OpenSeadragon.TileSource {
+  const format = pyramid.format ?? slide.format;
+  const source = new OpenSeadragon.TileSource({
+    width: slide.width,
+    height: slide.height,
+    tileSize: pyramid.tileSize ?? slide.tileSize,
+    tileOverlap: slide.overlap,
+    minLevel: pyramid.minLevel ?? 0,
+    maxLevel: slide.levels - 1,
+  } as unknown as OpenSeadragon.TileSourceOptions);
+  source.getTileUrl = (level: number, x: number, y: number) => filesRef.current(`${tilesPath}/${level}/${x}_${y}.${format}`);
+  return source;
+}
+
+export const SlideViewer = forwardRef<SlideViewerHandle, SlideViewerProps>(function SlideViewer(
+  { slide, files, pins = [], onStatus, onPinClick, onAccessExpired, children, channelVisibility, overlayDisplay, onViewChange },
+  ref
+) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const viewerRef = useRef<OpenSeadragon.Viewer | null>(null);
+  const filesRef = useRef(files);
+  const channelVisRef = useRef(channelVisibility);
+  channelVisRef.current = channelVisibility;
+  const overlayDisplayRef = useRef(overlayDisplay);
+  overlayDisplayRef.current = overlayDisplay;
+  const overlayItems = useRef(new Map<string, OpenSeadragon.TiledImage>());
+  const onViewChangeRef = useRef(onViewChange);
+  onViewChangeRef.current = onViewChange;
+  /** When this viewer last followed its linked partner; its own moves are not reported back meanwhile. */
+  const lastSyncAt = useRef(0);
+  const statusRef = useRef<ViewerStatus>({
+    magnification: null,
+    umPerPixel: null,
+    tilesLoaded: 0,
+    tilesFailed: 0,
+    firstTileMs: null,
+    touring: false,
+  });
+  const tourRef = useRef<AbortController | null>(null);
+  const onStatusRef = useRef(onStatus);
+  const onPinClickRef = useRef(onPinClick);
+  const onExpiredRef = useRef(onAccessExpired);
+  onStatusRef.current = onStatus;
+  onPinClickRef.current = onPinClick;
+  onExpiredRef.current = onAccessExpired;
+  filesRef.current = files;
+
+  const emit = (patch: Partial<ViewerStatus>) => {
+    statusRef.current = { ...statusRef.current, ...patch };
+    onStatusRef.current(statusRef.current);
+  };
+
+  const setAnimation = (seconds: number) => {
+    const vp = viewerRef.current?.viewport as unknown as {
+      centerSpringX: { animationTime: number };
+      centerSpringY: { animationTime: number };
+      zoomSpring: { animationTime: number };
+    };
+    if (!vp) return;
+    vp.centerSpringX.animationTime = seconds;
+    vp.centerSpringY.animationTime = seconds;
+    vp.zoomSpring.animationTime = seconds;
+  };
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const opened = performance.now();
+    statusRef.current = {
+      magnification: null,
+      umPerPixel: null,
+      tilesLoaded: 0,
+      tilesFailed: 0,
+      firstTileMs: null,
+      touring: false,
+    };
+
+    const viewer = OpenSeadragon({
+      element: containerRef.current,
+      // Fluorescence: one tiled image per marker, added together like light ('lighter' compositing).
+      tileSources: (slide.channels?.length
+        ? slide.channels.map((ch) => ({
+            tileSource: buildTileSource(slide, filesRef, `channels/${ch.id}/slide_files`),
+            compositeOperation: 'lighter',
+            opacity: (channelVisRef.current?.[ch.id] ?? ch.visible) ? 1 : 0,
+          }))
+        : buildTileSource(slide, filesRef)) as unknown as OpenSeadragon.TileSourceOptions,
+      // Composite operations need the canvas drawer. So do semi-transparent AI layers: the WebGL drawer blends
+      // tiles as premultiplied alpha, which turns a faint overlay tint nearly opaque.
+      ...(slide.channels?.length || slide.overlays?.length ? { drawer: 'canvas' } : {}),
+      showNavigationControl: false,
+      showNavigator: true,
+      navigatorPosition: 'BOTTOM_LEFT',
+      navigatorSizeRatio: 0.15,
+      navigatorAutoFade: false,
+      navigatorBackground: '#faf9f5',
+      navigatorBorderColor: '#141413',
+      navigatorDisplayRegionColor: '#f26419',
+      animationTime: NORMAL_ANIMATION,
+      springStiffness: 6.5,
+      blendTime: 0.25,
+      maxZoomPixelRatio: 2,
+      minZoomImageRatio: 0.6,
+      visibilityRatio: 0.4,
+      imageLoaderLimit: 12,
+      timeout: 60_000,
+      smoothTileEdgesMinZoom: 1.1,
+      immediateRender: false,
+      gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: true },
+      // OneLake answers simple GETs with `Access-Control-Allow-Origin: *`, so tiles stay untainted
+      // and OpenSeadragon can keep its WebGL drawer.
+      crossOriginPolicy: 'Anonymous',
+    });
+    viewerRef.current = viewer;
+
+    const updateZoom = () => {
+      const vp = viewer.viewport;
+      const item = viewer.world.getItemAt(0);
+      if (!item) return;
+      const imageZoom = item.viewportToImageZoom(vp.getZoom(true));
+      emit({
+        magnification: slide.objectivePower ? slide.objectivePower * imageZoom : null,
+        umPerPixel: slide.mpp ? slide.mpp / imageZoom : null,
+      });
+    };
+
+    let failuresSinceRefresh = 0;
+    const overlaySet = new Set<unknown>();
+    const overlayOpacity = (id: string) => {
+      const d = overlayDisplayRef.current?.[id];
+      return d?.visible ? d.opacity : 0;
+    };
+    // AI layers go on top of the slide once it has opened; hidden layers load no tiles.
+    const addOverlays = () => {
+      for (const o of slide.overlays ?? []) {
+        const add = (tileSource: unknown, width?: number) =>
+          viewer.addTiledImage({
+            tileSource: tileSource as OpenSeadragon.TileSourceOptions,
+            x: o.x ?? 0,
+            y: o.y ?? 0,
+            ...(width ? { width } : {}),
+            opacity: overlayOpacity(o.id),
+            success: (e: { item: OpenSeadragon.TiledImage }) => {
+              overlaySet.add(e.item);
+              overlayItems.current.set(o.id, e.item);
+              e.item.setOpacity(overlayOpacity(o.id));
+            },
+          } as unknown as OpenSeadragon.TiledImageOptions);
+        if (o.kind === 'tiled' && o.prefix) {
+          add(
+            buildTileSource(slide, filesRef, `${slide.prefix ?? ''}${o.prefix}slide_files`, {
+              tileSize: o.tileSize,
+              minLevel: o.minLevel,
+              format: o.format ?? 'png',
+            })
+          );
+        } else if (o.kind === 'image' && o.file && (o.width || o.fraction)) {
+          const url = filesRef.current(`${slide.prefix ?? ''}${o.file}`);
+          add({ type: 'image', url, crossOriginPolicy: 'Anonymous' }, o.fraction ?? o.width! / slide.width);
+        }
+      }
+    };
+
+    const reportView = () => {
+      const report = onViewChangeRef.current;
+      if (!report) return;
+      // Moves that echo the linked viewer would fight it while its animation is still running.
+      if (performance.now() - lastSyncAt.current < 500) return;
+      const c = viewer.viewport.getCenter(true);
+      const zoom = viewer.viewport.getZoom(true);
+      const item = viewer.world.getItemAt(0);
+      const imageZoom = item?.viewportToImageZoom(zoom);
+      report({ x: c.x, y: c.y, zoom, umPerScreenPx: slide.mpp && imageZoom ? slide.mpp / imageZoom : null });
+    };
+
+    viewer.addHandler('animation', updateZoom);
+    viewer.addHandler('animation', reportView);
+    viewer.addHandler('open', updateZoom);
+    viewer.addHandler('open', addOverlays);
+    viewer.addHandler('resize', updateZoom);
+    viewer.addHandler('tile-loaded', () => {
+      failuresSinceRefresh = 0;
+      emit({
+        tilesLoaded: statusRef.current.tilesLoaded + 1,
+        firstTileMs: statusRef.current.firstTileMs ?? Math.round(performance.now() - opened),
+      });
+    });
+    viewer.addHandler('canvas-press', () => {
+      tourRef.current?.abort();
+      viewer.container.classList.add('is-grabbing');
+    });
+    viewer.addHandler('canvas-release', () => viewer.container.classList.remove('is-grabbing'));
+    viewer.addHandler('canvas-scroll', () => tourRef.current?.abort());
+    viewer.addHandler('tile-load-failed', (e) => {
+      if (overlaySet.has((e as unknown as { tiledImage: unknown }).tiledImage)) return;
+      emit({ tilesFailed: statusRef.current.tilesFailed + 1 });
+      failuresSinceRefresh += 1;
+      if (failuresSinceRefresh === 6) onExpiredRef.current?.();
+    });
+
+    return () => {
+      tourRef.current?.abort();
+      overlayItems.current.clear();
+      viewer.destroy();
+      viewerRef.current = null;
+    };
+    // The viewer is rebuilt only when the slide or case image changes; refreshed file URLs are read through filesRef.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slide.id, slide.imageKey]);
+
+  useEffect(() => {
+    for (const [id, item] of overlayItems.current) {
+      const d = overlayDisplay?.[id];
+      item.setOpacity(d?.visible ? d.opacity : 0);
+    }
+  }, [overlayDisplay]);
+
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer || !slide.channels?.length || !channelVisibility) return;
+    slide.channels.forEach((ch, i) => {
+      viewer.world.getItemAt(i)?.setOpacity(channelVisibility[ch.id] ? 1 : 0);
+    });
+  }, [channelVisibility, slide.channels]);
+
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+    const elements = pins.map((pin) => {
+      const el = document.createElement('button');
+      el.className = 'slide-pin';
+      el.title = pin.title;
+      el.innerHTML = `<span class="slide-pin-dot"></span><span class="slide-pin-label">${pin.title
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')}</span>`;
+      new OpenSeadragon.MouseTracker({
+        element: el,
+        clickHandler: () => onPinClickRef.current?.(pin.id),
+      });
+      viewer.addOverlay({
+        element: el,
+        location: new OpenSeadragon.Point(pin.x, pin.y),
+        placement: OpenSeadragon.Placement.CENTER,
+        checkResize: false,
+      });
+      return el;
+    });
+    return () => elements.forEach((el) => viewerRef.current?.removeOverlay(el));
+  }, [pins, slide.id]);
+
+  const zoomToImageZoom = (imageZoom: number, center?: OpenSeadragon.Point) => {
+    const viewer = viewerRef.current;
+    const item = viewer?.world.getItemAt(0);
+    if (!viewer || !item) return;
+    if (center) viewer.viewport.panTo(center);
+    viewer.viewport.zoomTo(item.imageToViewportZoom(imageZoom), undefined, false);
+  };
+
+  useImperativeHandle(ref, () => ({
+    home: () => viewerRef.current?.viewport.goHome(),
+    syncTo: (view: SyncView) => {
+      const viewer = viewerRef.current;
+      if (!viewer) return;
+      lastSyncAt.current = performance.now();
+      const item = viewer.world.getItemAt(0);
+      const zoom = view.umPerScreenPx && slide.mpp && item ? item.imageToViewportZoom(slide.mpp / view.umPerScreenPx) : view.zoom;
+      viewer.viewport.zoomTo(zoom, undefined, true);
+      viewer.viewport.panTo(new OpenSeadragon.Point(view.x, view.y), true);
+    },
+    zoomToMagnification: (mag: number) => {
+      if (!slide.objectivePower) return;
+      zoomToImageZoom(mag / slide.objectivePower);
+    },
+    getView: () => {
+      const viewer = viewerRef.current;
+      const item = viewer?.world.getItemAt(0);
+      if (!viewer || !item) return null;
+      const c = viewer.viewport.getCenter(true);
+      return { x: c.x, y: c.y, zoom: item.viewportToImageZoom(viewer.viewport.getZoom(true)) };
+    },
+    flyTo: (view: ViewState) => {
+      zoomToImageZoom(view.zoom, new OpenSeadragon.Point(view.x, view.y));
+    },
+    startTour: () => {
+      tourRef.current?.abort();
+      const controller = new AbortController();
+      tourRef.current = controller;
+      const { signal } = controller;
+      const objective = slide.objectivePower ?? 40;
+      const stops = slide.hotspots.slice(0, 4);
+      emit({ touring: true });
+      setAnimation(TOUR_ANIMATION);
+      void (async () => {
+        try {
+          viewerRef.current?.viewport.goHome();
+          await sleep(1800, signal);
+          for (const spot of stops) {
+            const point = new OpenSeadragon.Point(spot.x, spot.y);
+            zoomToImageZoom(2.5 / objective, point);
+            await sleep(2800, signal);
+            zoomToImageZoom(10 / objective, point);
+            await sleep(2800, signal);
+            zoomToImageZoom(1, point);
+            await sleep(4200, signal);
+            zoomToImageZoom(1.25 / objective, point);
+            await sleep(2400, signal);
+          }
+          viewerRef.current?.viewport.goHome();
+        } catch {
+          // Tour cancelled.
+        } finally {
+          setAnimation(NORMAL_ANIMATION);
+          if (tourRef.current === controller) {
+            tourRef.current = null;
+            emit({ touring: false });
+          }
+        }
+      })();
+    },
+    stopTour: () => tourRef.current?.abort(),
+  }));
+
+  return (
+    <div className="relative h-full w-full">
+      <div
+        ref={containerRef}
+        className={`absolute inset-0 slide-canvas ${slide.kind === 'fluorescence' ? 'slide-canvas-dark' : ''}`}
+      />
+      {children}
+    </div>
+  );
+});

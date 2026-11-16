@@ -1,0 +1,7 @@
+host.json
+local.settings.json
+deploymetadata.json
+bin/
+obj/
+# Written by scripts/22_approval_app.py for one workspace
+src/config.generated.ts

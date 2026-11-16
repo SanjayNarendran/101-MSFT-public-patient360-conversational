@@ -1,0 +1,148 @@
+{
+  "about": "Demo patients for Patient 360, in demo order. Every fact below was read from the Bronze sources (Clarity, Bronze_PACS, Bronze_ClinicalDocuments) on 2026-11-08; the imaging-demo studies were added on 2026-11-09. The patients are synthetic (Synthea Coherent); the images come from public archives (LIDC-IDRI, TCGA, Coherent MRI) with synthetic identities attached.",
+  "patients": [
+    {
+      "patient_id": "Z1002519",
+      "title": "Two cancers, two slides, PET/CT and a 4D CT",
+      "why": "Carcinoma in situ of the prostate in January 2017 and stage 1 non-small cell lung cancer in March 2018, each with its surgical pathology slide and report. A 4D CT that plans his radiotherapy, the tumour moving as he breathes; a whole-body FDG PET/CT in August 2019; the brain-wiring atlas beside his MRI after a stroke in 2003. Cisplatin, paclitaxel, docetaxel and leuprolide. Died in October 2019. 144 visits and 565 lab results."
+    },
+    {
+      "patient_id": "Z1003499",
+      "title": "Breast cancer, a pregnancy, then colon cancer",
+      "why": "Breast cancer in April 2009: her biopsy slide, and a breast slide with AI outlines of every nucleus, a map of immune cells, its frozen section and report. A pregnancy in 2016, with the fetal brain atlas from 21 to 36 weeks. Colon cancer in April 2018: its biopsy slide and a 36-marker immunofluorescence image of colon cancer tissue. A low-dose lung CT in December 2023. Tumour genomes of both cancers."
+    },
+    {
+      "patient_id": "Z1001228",
+      "title": "From screening CT to lung cancer",
+      "why": "A daily smoker with emphysema. A low-dose screening CT in November 2019 found ten nodules, the largest 16.2 mm; a year later the lung biopsy slide confirmed stage 1 non-small cell lung cancer, treated with cisplatin and paclitaxel. Died in December 2025."
+    },
+    {
+      "patient_id": "TCGA-J2-8192",
+      "title": "Lung adenocarcinoma, EGFR exon 19",
+      "why": "EGFR exon 19 deletion in a never-smoker with three prior cancers; erlotinib at recurrence; AI lung and nodule segmentation."
+    },
+    {
+      "patient_id": "Z1003295",
+      "title": "Breast cancer, then colon cancer 25 years later",
+      "why": "Breast cancer in 1993 and colon cancer in 2018, each with its slide and pathology report; oxaliplatin and leucovorin. A 12.9 mm solitary lung nodule on a screening CT in 2019, a chest X-ray before it, Alzheimer's disease; died in February 2021. 202 visits."
+    },
+    {
+      "patient_id": "Z1002941",
+      "title": "Every kind of image",
+      "why": "Brain MRI in 1992, breast cancer slide in 2004, then a chest X-ray and a screening CT with three nodules up to 12.8 mm in 2021. Stroke with cognitive decline and 26 inpatient stays."
+    },
+    {
+      "patient_id": "Z1000043",
+      "title": "Breast cancer treatment and lung nodules",
+      "why": "Breast cancer in December 2021, treated with epirubicin and exemestane; the surgical slide from June 2022. Five nodules up to 9.5 mm on a screening CT in December 2023, with a chest X-ray and a brain MRI. Osteoporosis on alendronic and zoledronic acid."
+    },
+    {
+      "patient_id": "Z1002778",
+      "title": "Colon cancer in a long cardiac history",
+      "why": "Colon cancer in 2015 with its slide, resolved by 2017. Brain MRI, chest X-ray and a CT with two outlined nodules. Lupus on cyclosporine, coronary heart disease and a heart attack, Alzheimer's disease; died in July 2023."
+    },
+    {
+      "patient_id": "Z1001644",
+      "title": "A 39.6 mm nodule after lung cancer",
+      "why": "Stage 1 non-small cell lung cancer in December 2021, confirmed on the lung slide, treated with paclitaxel and cisplatin. Thirteen months later a CT shows a 39.6 mm solitary nodule; its radiology report is a scanned document. Diabetes with kidney disease; 357 visits and 842 lab results."
+    },
+    {
+      "patient_id": "Z1003261",
+      "title": "The largest nodule in the demo",
+      "why": "A screening CT in January 2022 found four nodules, one of them 44.9 mm, in a patient with emphysema. Colon cancer followed in February 2024, with its slide and pathology report."
+    },
+    {
+      "patient_id": "Z1002234",
+      "title": "Fifteen nodules on one CT",
+      "why": "A low-dose screening CT in April 2019 with fifteen nodules outlined by the LIDC radiologists, the most in the demo, the largest 12.3 mm. A chest X-ray two months before, a brain MRI five months after, and a scanned progress note."
+    },
+    {
+      "patient_id": "Z1000264",
+      "title": "Scanned documents beside their text",
+      "why": "A 19.2 mm solitary nodule on a chest CT in May 2025, recorded as suspected lung cancer, and a brain MRI a month later. Three of her documents are scans (two progress notes and the MRI report), shown next to their text."
+    },
+    {
+      "patient_id": "Z1002116",
+      "title": "A scanned pathology report and its slide",
+      "why": "Prostate carcinoma in situ in April 2023: the pathology report is a scan, shown beside the slide it describes. Leuprolide and docetaxel. A screening CT with five nodules in 2019 and a brain MRI in 2023."
+    },
+    {
+      "patient_id": "Z1001107",
+      "title": "The longest record",
+      "why": "737 visits, 1,512 lab results and 124 inpatient stays: diabetes with kidney disease on insulin and metformin, coronary heart disease and stroke. Breast cancer in 2003 with its slide, and a 5 mm lung nodule on a screening CT in 2021."
+    }
+  ],
+  "research_about": "The oncology research patients: real, de-identified TCGA cases built by the Patient 360 reference app's pipeline (research/patient360), with its descriptions. Display names and primary-care histories are synthetic.",
+  "research": [
+    {
+      "patient_id": "TCGA-E2-A152",
+      "title": "Breast cancer, HER2-enriched",
+      "why": "ERBB2 amplified and IHC 3+, trastuzumab; liver and bone metastases at day 54 and 83, tumour-free at 5.8 years."
+    },
+    {
+      "patient_id": "TCGA-VQ-A91D",
+      "title": "Gastric cancer, MSI-high",
+      "why": "Truncating MLH1, 2,141 mutations (72 per Mb); died at day 356."
+    },
+    {
+      "patient_id": "TCGA-FI-A2D5",
+      "title": "Endometrial cancer, POLE",
+      "why": "POLE V411L, 13,853 mutations (466 per Mb, 99th percentile), synchronous lung cancer."
+    },
+    {
+      "patient_id": "TCGA-DD-A1EH",
+      "title": "Liver cancer, hepatitis B",
+      "why": "Aged 23, AFP 94,340 ng/mL; AI liver volume 1,896 mL before and 1,049 mL after resection."
+    },
+    {
+      "patient_id": "TCGA-G6-A8L6",
+      "title": "Clear cell kidney cancer",
+      "why": "VHL, PBRM1, SETD2 truncations (3p); sunitinib, axitinib, bevacizumab in ten months."
+    },
+    {
+      "patient_id": "TCGA-G4-6303",
+      "title": "Colon cancer, five lines of treatment",
+      "why": "KRAS wild-type, five lines over 5.5 years including cetuximab; prone CT colonography."
+    },
+    {
+      "patient_id": "TCGA-25-2042",
+      "title": "Ovarian cancer, high-grade serous",
+      "why": "Progressed on platinum; three CT scans across treatment."
+    },
+    {
+      "patient_id": "TCGA-FD-A3SJ",
+      "title": "Bladder cancer",
+      "why": "BCG for prior non-invasive disease, 40 pack-years, electrical installer; HRD 55."
+    },
+    {
+      "patient_id": "TCGA-60-2722",
+      "title": "Lung squamous cell carcinoma",
+      "why": "90 pack-years; SOX2/TP63 amplified, CDKN2A deleted; the most lymphocyte-rich slide."
+    },
+    {
+      "patient_id": "TCGA-VR-AA4D",
+      "title": "Oesophageal adenocarcinoma",
+      "why": "Reflux disease; ERBB2 amplified with no HER2 therapy on record."
+    },
+    {
+      "patient_id": "TCGA-VS-A9V3",
+      "title": "Cervical squamous cell carcinoma",
+      "why": "Complete response to chemoradiation and brachytherapy, then nodal relapse; PD-L1 RNA high."
+    },
+    {
+      "patient_id": "TCGA-J4-A6G3",
+      "title": "Prostate cancer, Gleason 8",
+      "why": "Gleason 8, SPOP F133V, positive margins, biochemical recurrence."
+    },
+    {
+      "patient_id": "TCGA-G7-A8LE",
+      "title": "Papillary kidney cancer",
+      "why": "MET Y1230H; AI segmentation of kidneys, mass and cysts; tumour-free at 6.7 years."
+    },
+    {
+      "patient_id": "TCGA-KM-8441",
+      "title": "Chromophobe kidney cancer",
+      "why": "AI-measured 49 mL mass; MTOR I2017T; a second kidney primary."
+    }
+  ]
+}

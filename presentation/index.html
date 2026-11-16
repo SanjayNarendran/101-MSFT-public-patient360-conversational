@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Data Unification, Cohort Discovery &amp; Delivery, Research · Microsoft Fabric</title>
+  <script src="assets/js/theme-init.js"></script>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <meta name="theme-color" content="#faf9f5" />
+  <link rel="stylesheet" href="assets/fonts.css" />
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#fabric" aria-label="Data Unification, Cohort Discovery and Delivery, Research on Microsoft Fabric">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-text">Data Unification, Cohort Discovery &amp; Delivery, Research</span>
+        <span class="brand-sub">on Microsoft Fabric</span>
+      </a>
+      <div class="actions">
+        <span class="source-id mono" title="Fabric workspace MedicalCohortDemo">MedicalCohortDemo</span>
+        <div class="seg" id="themeSeg" role="group" aria-label="Colour theme">
+          <button type="button" data-theme-set="light" aria-pressed="true">Light</button>
+          <button type="button" data-theme-set="dark" aria-pressed="false">Dark</button>
+        </div>
+      </div>
+    </div>
+    <div class="section-bar" id="sectionBar">
+      <div class="section-bar-inner"><nav class="chapter-pills" aria-label="Sections"></nav><a class="section-bar-name" href="#unification"></a></div>
+    </div>
+  </header>
+
+  <main id="view-deck" class="view">
+    <!-- What Microsoft Fabric is: the headline, then the platform drawn as one figure (assets/js/platform.js) with the
+         part you select explained beside it -->
+    <section id="fabric" class="hero q-hero">
+      <div class="hero-grid">
+        <div class="hero-main">
+          <h1 class="headline">Microsoft Fabric brings data from every source into OneLake,<br class="hl-break" /> and every workload reads that one copy.</h1>
+          <p class="lede">Microsoft Fabric is a software‑as‑a‑service data platform. Its workloads run on shared compute capacity and keep their data in OneLake, the organization’s data lake, which is built on Azure Data Lake Storage. Data in other clouds and systems can be added to OneLake with a shortcut, which reads it from the source, or with mirroring, which keeps a replica up to date. Select any part of the figure for a short description.</p>
+        </div>
+      </div>
+
+      <div class="pf" id="platform">
+        <figure class="pf-fig" id="pfFig" aria-label="Microsoft Fabric: GitHub Copilot and Microsoft Foundry above it, workloads on a shared platform, and data from seven kinds of source connected to OneLake">
+          <div class="pf-top" role="group" aria-label="Works with Fabric"></div>
+          <div class="pf-link" aria-hidden="true"></div>
+          <div class="pf-frame">
+            <div class="pf-brand-slot"></div>
+            <div class="pf-work" role="group" aria-label="Workloads"></div>
+            <div class="pf-plat">
+              <div class="pf-plat-row" role="group" aria-label="Platform services"></div>
+              <div class="pf-lake-slot"></div>
+            </div>
+          </div>
+          <div class="pf-flow" aria-hidden="true"></div>
+          <div class="pf-src" role="group" aria-label="Sources"></div>
+        </figure>
+
+        <aside class="pf-pane" id="pfPane" aria-label="About the selected part of Fabric">
+          <div class="pf-pane-body" id="pfPaneBody" aria-live="polite"></div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- About this demo: the question it answers and the data it uses, across the full width -->
+    <section class="doc-sec about" id="about" aria-labelledby="aboutTitle">
+      <div class="doc-head">
+        <h2 id="aboutTitle">About this demo</h2>
+        <p>The question the demo answers, and the data it uses.</p>
+      </div>
+      <div class="doc-body">
+        <p class="about-text">A research team wants patients for a study, for example former smokers aged 50 or over with a lung nodule of at least 6&nbsp;mm on CT. Once the patients are found, the team needs their records, images and reports. That information is split between the EHR, the PACS and the clinical documents, which are separate systems with their own identifiers.</p>
+        <p class="about-text">The demo builds a research data platform for this in one Fabric workspace, with <b>3,539</b> synthetic patients. The study question above finds <b>358</b> of them. The sections below follow the data from the source systems to the research team.</p>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Data</th><th>Source</th><th>Contents</th></tr></thead>
+            <tbody>
+              <tr><td><b>EHR</b><span class="ds-full">Epic Clarity and Caboodle style</span></td><td>Generated from the Synthea Coherent Data Set (MITRE, CC BY 4.0) and written to OneLake as Delta tables</td><td>54 tables with 3.9 million rows, covering 3,539 patients and 286,647 encounters with their diagnoses, medications, orders, results and vital signs</td></tr>
+              <tr><td><b>Imaging</b><span class="ds-full">PACS index and DICOM</span></td><td>LIDC‑IDRI chest CT and TCGA pathology slides from NCI Imaging Data Commons (CC BY 3.0), and Synthea Coherent brain MRI</td><td>12,910 studies in the PACS index, of which 2,398 have images (262,171 DICOM files, 289&nbsp;GB), and 2,651 lung nodule findings</td></tr>
+              <tr><td><b>Clinical documents</b></td><td>Written from each patient’s record with templates</td><td>12,118 radiology reports, 792 pathology reports and 5,000 progress notes, with 500 of them saved as scanned PDFs</td></tr>
+              <tr><td><b>Research models</b><span class="ds-full">Silver and Gold layers</span></td><td>Built in Fabric from the source data</td><td>OMOP CDM v5.4 with the standard vocabularies, and an i2b2 star schema with a 1,534‑item ontology for cohort queries</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="fig-note">All patients are synthetic. The images come from public research archives, and their DICOM headers were rewritten with the synthetic patients’ names and identifiers.</p>
+      </div>
+    </section>
+
+    <!-- The demo, section by section: a contents rail (every section; the one you're reading expands to its title and
+         description, copied in by main.js) beside the sections. -->
+    <div class="q-layout">
+    <aside class="q-rail" id="qRail" aria-label="Sections">
+      <div class="q-rail-inner">
+        <span class="q-rail-label">The demo</span>
+        <ol class="q-toc" id="qToc"></ol>
+      </div>
+    </aside>
+    <div class="q-sections">
+
+    <!-- 01 Data unification: how each source reaches OneLake (assets/js/unification.js draws and plays the figures) -->
+    <section id="unification" class="chapter" data-num="01" data-label="Data Unification">
+      <header class="chapter-head">
+        <button type="button" class="chapter-act" aria-expanded="true" aria-controls="unification-body"><span class="chapter-act-label">Hide</span><span class="sr-only"> section 01</span><svg class="chapter-chev" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="chapter-stick">
+          <h2 class="chapter-title"><button type="button" class="chapter-toggle" aria-expanded="true" aria-controls="unification-body"><span class="sr-only">01 </span><span class="chapter-name">Data unification in OneLake</span></button></h2>
+          <div class="chapter-lede"><div><p>The data starts in four places. The Epic Clarity and Caboodle tables can be in SQL Server on premises, Snowflake, Azure Databricks or another Fabric workspace (this demo writes them straight into OneLake), the PACS index is in the imaging vendor’s cloud, and <b>262,171</b> DICOM images and <b>17,910</b> clinical documents are in Azure Data Lake Storage. Fig&nbsp;1 shows how each one is connected to OneLake.</p><ul class="caveat how-to" aria-label="How the sources are connected">
+            <li>Data already stored as open files, such as Iceberg or Delta tables and DICOM folders, is connected with a shortcut. Fabric reads the files from the source.</li>
+            <li>Databases in use, such as the PACS index or SQL Server, are mirrored. Fabric keeps a Delta replica of each one up to date.</li>
+          </ul><p>Afterwards the workspace holds <b>62</b> tables and about <b>280,000</b> files, linked by MRN and accession number. The last step of Fig&nbsp;1, Future, shows Epic Cogito Cloud sharing the Epic tables from Epic’s own Fabric tenant. Fig&nbsp;2 shows how a source in an older format, such as COBOL files or an AS/400, would be added with Data Factory and Spark.</p></div></div>
+        </div>
+      </header>
+      <div class="chapter-body" id="unification-body"><div class="chapter-inner">
+      <div class="bento">
+        <article class="card span-12 uni-card" id="uniCard">
+          <div class="card-head">
+            <div>
+              <div class="eyebrow">Fig 1</div>
+              <h3>How each source is connected to OneLake</h3>
+              <p class="sub">Dashed lines are shortcuts, which read the source’s files directly. Solid lines are mirroring, which keeps a replica of a database’s tables in OneLake. The first card turns through four places the Epic tables can be.</p>
+            </div>
+            <div class="uni-tools">
+              <div class="chips" id="uniSteps" role="group" aria-label="Step"></div>
+              <button type="button" class="btn uni-play" id="uniPlay" aria-pressed="false"></button>
+            </div>
+          </div>
+          <div class="uni-scroll"><div class="uni-fig" id="uniFig" role="img" aria-label="The Epic tables are shown in turn in SQL Server on premises, mirrored through the on-premises data gateway, in Snowflake and in Azure Databricks, connected by shortcuts, and in another Fabric workspace, connected by a OneLake shortcut. Azure Data Lake Storage is connected by shortcuts, and the PACS database in the vendor's cloud by mirroring. In the Future step, Epic Cogito Cloud shares the Epic tables from Epic's Fabric tenant to the customer's Fabric tenant by an external data share"></div></div>
+          <div class="uni-cap">
+            <div class="uni-cap-text" id="uniCap" aria-live="polite"></div>
+            <dl class="uni-ledger" id="uniLedger">
+              <div data-ledger="shortcut"><dt>Shortcuts</dt><dd><b>0</b> sources</dd></div>
+              <div data-ledger="mirror"><dt>Mirrored</dt><dd><b>0</b> sources</dd></div>
+              <div data-ledger="copied"><dt>Pipelines</dt><dd><b>0</b> sources</dd></div>
+            </dl>
+          </div>
+        </article>
+
+        <article class="card span-12 uni-card" id="legacyCard">
+          <div class="card-head">
+            <div>
+              <div class="eyebrow">Fig 2, a hypothetical case</div>
+              <h3>Legacy and vendor formats</h3>
+              <p class="sub">Some systems have no open export format. Data Factory copies their data into OneLake as raw files, and a Spark notebook converts the files to Delta tables.</p>
+            </div>
+          </div>
+          <div class="uni-scroll"><div class="uni-fig" id="legacyFig" role="img" aria-label="Mainframe COBOL files, an AS/400 and a vendor system copied by Data Factory into OneLake Files, decoded by a Spark notebook into Delta tables"></div></div>
+          <p class="fig-note">Data Factory’s IBM Db2 connector reads Db2 on an AS/400 through the on‑premises data gateway, and pipelines copy mainframe and vendor files byte for byte. A Spark notebook then decodes the EBCDIC records with their COBOL copybook, for example with the open‑source Cobrix library, and writes Delta tables.</p>
+        </article>
+      </div>
+      </div></div>
+    </section>
+
+    <!-- 02 Medallion architecture: the OneLake box of section 01 becomes Bronze, then Silver (OMOP) and Gold (i2b2)
+         are built from it (assets/js/medallion.js draws and plays the figure) -->
+    <section id="medallion" class="chapter" data-num="02" data-label="Medallion Architecture">
+      <header class="chapter-head">
+        <button type="button" class="chapter-act" aria-expanded="true" aria-controls="medallion-body"><span class="chapter-act-label">Hide</span><span class="sr-only"> section 02</span><svg class="chapter-chev" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="chapter-stick">
+          <h2 class="chapter-title"><button type="button" class="chapter-toggle" aria-expanded="true" aria-controls="medallion-body"><span class="sr-only">02 </span><span class="chapter-name">Bronze, Silver and Gold layers</span></button></h2>
+          <div class="chapter-lede"><div><p>A medallion architecture keeps data in layers. <b>Bronze</b> holds the data as each source delivered it, <b>Silver</b> holds it cleaned and in a standard model, and <b>Gold</b> holds it shaped for a particular use. In this demo Silver is the OMOP Common Data Model and Gold is an i2b2 star schema for cohort queries.</p><ul class="caveat how-to" aria-label="How the layers are built">
+            <li>In Bronze, the DICOM headers were given the Epic patient identifiers, and the PACS gained <b>2,651</b> nodule findings from the radiologists’ annotations.</li>
+            <li>Two Fabric notebooks build the other layers, Silver_OMOP_Build from Bronze and Gold_i2b2_Build from Silver, so both can be rebuilt after a source changes.</li>
+          </ul><p>Fig&nbsp;3 starts with the OneLake box from section 01. The card below it says why the demo uses OMOP and i2b2.</p></div></div>
+        </div>
+      </header>
+      <div class="chapter-body" id="medallion-body"><div class="chapter-inner">
+      <div class="bento">
+        <article class="card span-12 uni-card" id="medCard">
+          <div class="card-head">
+            <div>
+              <div class="eyebrow">Fig 3</div>
+              <h3>From Bronze to Silver and Gold</h3>
+              <p class="sub">Each layer is built from the one to its left. The moving marks are records being written.</p>
+            </div>
+            <div class="uni-tools">
+              <div class="chips" id="medSteps" role="group" aria-label="Step"></div>
+              <button type="button" class="btn uni-play" id="medPlay" aria-pressed="false"></button>
+            </div>
+          </div>
+          <div class="uni-scroll"><div class="uni-fig" id="medFig" role="img" aria-label="The OneLake box from section 01 becomes the Bronze layer. Enrichment adds the Epic identifiers to the DICOM headers and 2,651 nodule findings to the PACS. A notebook builds the Silver layer in OMOP from Bronze, and another builds the Gold layer in i2b2 from Silver. The study question finds 358 patients in each."></div></div>
+          <div class="uni-cap">
+            <div class="uni-cap-text" id="medCap" aria-live="polite"></div>
+            <dl class="uni-ledger" id="medLedger">
+              <div data-ledger="bronze"><dt>Bronze</dt><dd><b>62</b> tables</dd></div>
+              <div data-ledger="silver"><dt>Silver</dt><dd><b>0</b> OMOP tables</dd></div>
+              <div data-ledger="gold"><dt>Gold</dt><dd><b>0</b> facts</dd></div>
+            </dl>
+          </div>
+        </article>
+
+        <article class="card span-12 why-card" id="whyModels">
+          <div class="card-head">
+            <div>
+              <div class="eyebrow">The two models</div>
+              <h3>Why the demo uses OMOP and i2b2</h3>
+              <p class="sub">Both are open data models that research hospitals already run. Building both lets the same study question be checked in each.</p>
+            </div>
+          </div>
+          <div class="why-grid">
+            <section class="why-col" aria-labelledby="whyOmop">
+              <h4 id="whyOmop"><span class="why-sw why-sw-s" aria-hidden="true"></span>OMOP CDM v5.4<span class="why-layer">Silver</span></h4>
+              <dl class="why-facts">
+                <div><dt>Maintained by</dt><dd>OHDSI, an open science community</dd></div>
+                <div><dt>Used by</dt><dd>ATLAS and the HADES R packages for observational research, and healthcare data solutions in Microsoft Fabric</dd></div>
+                <div><dt>Strength</dt><dd>Standard vocabularies. A concept such as “Nodule of lung” finds every code below it, whichever system the code came from</dd></div>
+              </dl>
+            </section>
+            <section class="why-col" aria-labelledby="whyI2b2">
+              <h4 id="whyI2b2"><span class="why-sw why-sw-g" aria-hidden="true"></span>i2b2<span class="why-layer">Gold</span></h4>
+              <dl class="why-facts">
+                <div><dt>Maintained by</dt><dd>The i2b2 tranSMART Foundation. i2b2 is open source and was first built at Harvard and Mass General Brigham</dd></div>
+                <div><dt>Used by</dt><dd>The i2b2 query tool, and SHRINE, which connects the academic medical centers of the ACT network</dd></div>
+                <div><dt>Strength</dt><dd>An ontology tree with a patient count on every folder, for checking how many patients a study could recruit</dd></div>
+              </dl>
+            </section>
+          </div>
+          <p class="fig-note">i2b2 can also run directly on an OMOP database. In this demo Gold is a separate copy that carries no source identifiers; the mapping to the Epic IDs stays in Silver.</p>
+        </article>
+      </div>
+      </div></div>
+    </section>
+
+    <!-- 03 Semantic models: the three models with the group each is for, and Fabric IQ for questions in plain language
+         (assets/js/semantic.js draws and plays the figure) -->
+    <section id="semantic-model" class="chapter" data-num="03" data-label="Semantic Model">
+      <header class="chapter-head">
+        <button type="button" class="chapter-act" aria-expanded="true" aria-controls="semantic-model-body"><span class="chapter-act-label">Hide</span><span class="sr-only"> section 03</span><svg class="chapter-chev" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="chapter-stick">
+          <h2 class="chapter-title"><button type="button" class="chapter-toggle" aria-expanded="true" aria-controls="semantic-model-body"><span class="sr-only">03 </span><span class="chapter-name">Semantic models and Fabric IQ</span></button></h2>
+          <div class="chapter-lede"><div><p>A semantic model sits between the tables and the people who ask questions. It names the tables, relates them and holds shared measures, such as an obfuscated patient count. Every report and agent that uses the model counts the same way.</p><ul class="caveat how-to" aria-label="The three semantic models">
+            <li>Researchers use <b>Cohort Discovery (i2b2)</b> for patient counts.</li>
+            <li>Reviewers use <b>Cohort Requests</b> to approve or reject data requests.</li>
+            <li>The honest broker uses <b>Research Data (OMOP)</b> for the patient-level records of approved requests.</li>
+          </ul><p>All three models are in Fabric IQ, the Fabric workload for semantic models and ontologies. Its MCP server is how GitHub Copilot asks the Cohort Discovery model questions in plain language, as the Cohort Discovery step of Fig&nbsp;4 shows.</p></div></div>
+        </div>
+      </header>
+      <div class="chapter-body" id="semantic-model-body"><div class="chapter-inner">
+      <div class="bento">
+        <article class="card span-12 uni-card" id="semCard">
+          <div class="card-head">
+            <div>
+              <div class="eyebrow">Fig 4</div>
+              <h3>Three semantic models in Fabric IQ</h3>
+              <p class="sub">Each model is drawn as its main tables and their relationships. GitHub Copilot and the approval app use the models from above, and the models read their items in OneLake below.</p>
+            </div>
+            <div class="uni-tools">
+              <div class="chips" id="semSteps" role="group" aria-label="Step"></div>
+              <button type="button" class="btn uni-play" id="semPlay" aria-pressed="false"></button>
+            </div>
+          </div>
+          <div class="uni-scroll"><div class="uni-fig" id="semFig" role="img" aria-label="Three semantic models in Fabric IQ. Research Data (OMOP), for the honest broker, reads Silver_OMOP, Bronze_PACS and Bronze_ClinicalDocuments in Direct Lake mode. Cohort Discovery (i2b2), for researchers, reads Gold_i2b2 in Direct Lake mode, and GitHub Copilot asks it questions in plain language through the Fabric IQ MCP server. Cohort Requests, for the reviewers, reads the Cohort_Requests database in DirectQuery mode and is used by the approval app, a Rayfin app."></div></div>
+          <div class="uni-cap">
+            <div class="uni-cap-text" id="semCap" aria-live="polite"></div>
+            <dl class="uni-ledger" id="semLedger">
+              <div data-ledger="tables"><dt>Tables</dt><dd><b>34</b> tables</dd></div>
+              <div data-ledger="rels"><dt>Relationships</dt><dd><b>30</b> relationships</dd></div>
+              <div data-ledger="items"><dt>Read from</dt><dd><b>5</b> Fabric items</dd></div>
+            </dl>
+          </div>
+        </article>
+      </div>
+      </div></div>
+    </section>
+
+    <!-- 04 Cohort discovery: the researcher's and the reviewer's experience, played in a replica of the two apps, with
+         what each step writes in i2b2 (assets/js/discovery.js) -->
+    <section id="cohort-discovery" class="chapter" data-num="04" data-label="Cohort Discovery">
+      <header class="chapter-head">
+        <button type="button" class="chapter-act" aria-expanded="true" aria-controls="cohort-discovery-body"><span class="chapter-act-label">Hide</span><span class="sr-only"> section 04</span><svg class="chapter-chev" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="chapter-stick">
+          <h2 class="chapter-title"><button type="button" class="chapter-toggle" aria-expanded="true" aria-controls="cohort-discovery-body"><span class="sr-only">04 </span><span class="chapter-name">Cohort discovery with i2b2</span></button></h2>
+          <div class="chapter-lede"><div><p>Before any patient data is released, a research team checks how many patients match its study’s criteria. In this demo the researcher asks in plain language in the Cohort Discovery app. GitHub Copilot turns the question into an i2b2 query and runs it on the Cohort Discovery semantic model, and the run is stored in i2b2’s query tables.</p><ul class="caveat how-to" aria-label="How cohort discovery works here">
+            <li>Counts are obfuscated the way i2b2 does it. Random noise is added, and a count of 3 or fewer is shown as “Fewer than 4”.</li>
+            <li>Every run gets a QUERY_MASTER_ID. When the researcher is happy with a run, they submit it as a data request, and a reviewer approves or rejects it in the approval app.</li>
+          </ul><p>Fig&nbsp;5 plays the whole path for the study question, from typing it to the approved request. The track under the screen shows what each step writes in i2b2.</p></div></div>
+        </div>
+      </header>
+      <div class="chapter-body" id="cohort-discovery-body"><div class="chapter-inner">
+      <div class="bento">
+        <article class="card span-12 uni-card" id="cdCard">
+          <div class="card-head">
+            <div>
+              <div class="eyebrow">Fig 5</div>
+              <h3>From a question to an approved request</h3>
+              <p class="sub">A replica of the Cohort Discovery app and the approval app, played with query 1005 from the demo’s query store.</p>
+            </div>
+          </div>
+          <!-- The app screen on its plate, with the step controls in the plate's top margin -->
+          <div class="cd-plate">
+            <div class="cd-transport">
+              <button type="button" class="btn uni-play" id="cdPlay" aria-pressed="false"></button>
+              <div class="chips" id="cdSteps" role="group" aria-label="Step"></div>
+              <button type="button" class="btn cd-full" aria-pressed="false"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path class="cd-full-in" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/><path class="cd-full-out" d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg><span>Full view</span></button>
+            </div>
+            <div class="cd-view" id="cdView" role="img" aria-label="The researcher types the study question in the Cohort Discovery app. Copilot searches the i2b2 ontology, fills three panels and runs the query, which returns 356 plus or minus 3 patients as QUERY_MASTER_ID 1005. The researcher submits a request, which appears as pending in the approval app, and a reviewer approves it with a comment."></div>
+            <div class="cd-plate-cap uni-cap-text" aria-hidden="true"></div>
+          </div>
+          <div class="uni-scroll"><div class="uni-fig">
+            <p class="cd-track-h">What each step writes in i2b2</p>
+            <ol class="cd-track" id="cdTrack"></ol>
+          </div></div>
+          <div class="uni-cap">
+            <div class="uni-cap-text" id="cdCap" aria-live="polite"></div>
+            <dl class="uni-ledger" id="cdLedger">
+              <div data-ledger="query"><dt>Query</dt><dd><b>–</b> QUERY_MASTER_ID</dd></div>
+              <div data-ledger="patients"><dt>Count</dt><dd><b>–</b> patients</dd></div>
+              <div data-ledger="request"><dt>Request</dt><dd><b>–</b> request</dd></div>
+            </dl>
+          </div>
+        </article>
+      </div>
+      </div></div>
+    </section>
+
+    <!-- 05 Data delivery: the approved request delivered to its own lakehouse, followed in the approval app and opened
+         in Fabric, with the Fabric items behind each step (assets/js/delivery.js) -->
+    <section id="data-delivery" class="chapter" data-num="05" data-label="Data Delivery">
+      <header class="chapter-head">
+        <button type="button" class="chapter-act" aria-expanded="true" aria-controls="data-delivery-body"><span class="chapter-act-label">Hide</span><span class="sr-only"> section 05</span><svg class="chapter-chev" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="chapter-stick">
+          <h2 class="chapter-title"><button type="button" class="chapter-toggle" aria-expanded="true" aria-controls="data-delivery-body"><span class="sr-only">05 </span><span class="chapter-name">Delivering the approved data</span></button></h2>
+          <div class="chapter-lede"><div><p>When a reviewer approves a request, the research team gets the data in a lakehouse of its own. The approval app starts a Data Factory pipeline, and the pipeline runs a notebook that builds the lakehouse from Silver_OMOP and the Bronze archives.</p><ul class="caveat how-to" aria-label="How the data is delivered">
+            <li>The cohort’s OMOP tables and documents are copied, filtered to its patients. Its imaging studies are linked with OneLake shortcuts, one per study.</li>
+            <li>Demo mode delivers 25 patients, 20 documents and 5 imaging studies, which keeps a live run to about two minutes.</li>
+          </ul><p>Fig&nbsp;6 follows the delivery of request <b>1005</b> from the approval app to the new lakehouse in Fabric. The diagram under the screen shows the Fabric item behind each step.</p></div></div>
+        </div>
+      </header>
+      <div class="chapter-body" id="data-delivery-body"><div class="chapter-inner">
+      <div class="bento">
+        <article class="card span-12 uni-card" id="dvCard">
+          <div class="card-head">
+            <div>
+              <div class="eyebrow">Fig 6</div>
+              <h3>From an approved request to a delivery lakehouse</h3>
+              <p class="sub">The approval app follows the run step by step. The numbers are those of a demo-mode delivery of query 1005.</p>
+            </div>
+          </div>
+          <!-- The app screen on its plate, with the step controls in the plate's top margin -->
+          <div class="cd-plate">
+            <div class="cd-transport">
+              <button type="button" class="btn uni-play" id="dvPlay" aria-pressed="false"></button>
+              <div class="chips" id="dvSteps" role="group" aria-label="Step"></div>
+              <button type="button" class="btn cd-full" aria-pressed="false"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path class="cd-full-in" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/><path class="cd-full-out" d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg><span>Full view</span></button>
+            </div>
+            <div class="cd-view" id="dvView" role="img" aria-label="In the approval app, the delivery of request 1005 runs from Queued to Delivered: the notebook prepares 25 of the 358 patients, creates the lakehouse Delivery_QM1005_FormerSmokers50LungNodule6mm_Demo, copies 19 tables, links 5 imaging studies with OneLake shortcuts and copies 20 documents. The lakehouse then opens in Fabric with its person table, the DICOM shortcuts and the documents."></div>
+            <div class="cd-plate-cap uni-cap-text" aria-hidden="true"></div>
+          </div>
+          <div class="uni-scroll"><div class="uni-fig">
+            <p class="dv-flow-h">The Fabric items behind each step</p>
+            <div id="dvFlow" role="img" aria-label="The approval app, a Rayfin app, starts the Cohort_Delivery_Pipeline in Data Factory, which runs the Cohort_Delivery notebook. The notebook records each step in the Cohort_Requests database, which the app reads every four seconds. In OneLake, rows are copied from Silver_OMOP and documents from Bronze_ClinicalDocuments into the delivery lakehouse, and each imaging study is a shortcut to Bronze_ImagingArchive."></div>
+          </div></div>
+          <div class="uni-cap">
+            <div class="uni-cap-text" id="dvCap" aria-live="polite"></div>
+            <dl class="uni-ledger" id="dvLedger">
+              <div data-ledger="patients"><dt>Patients</dt><dd><b>–</b> patients</dd></div>
+              <div data-ledger="tables"><dt>Tables</dt><dd><b>–</b> tables</dd></div>
+              <div data-ledger="files"><dt>Files</dt><dd><b>–</b> files</dd></div>
+            </dl>
+          </div>
+        </article>
+      </div>
+      </div></div>
+    </section>
+
+    <!-- 06 Research: the Explore notebook that comes with each delivery, opened and run in Fabric, with what it reads
+         in OneLake (assets/js/research.js) -->
+    <section id="research-platform" class="chapter" data-num="06" data-label="Research Platform">
+      <header class="chapter-head">
+        <button type="button" class="chapter-act" aria-expanded="true" aria-controls="research-platform-body"><span class="chapter-act-label">Hide</span><span class="sr-only"> section 06</span><svg class="chapter-chev" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="chapter-stick">
+          <h2 class="chapter-title"><button type="button" class="chapter-toggle" aria-expanded="true" aria-controls="research-platform-body"><span class="sr-only">06 </span><span class="chapter-name">Exploring the delivered data</span></button></h2>
+          <div class="chapter-lede"><div><p>Each delivery comes with a notebook for the research team, created in the same folder as the lakehouse and attached to it. It is a Fabric Python notebook. Run all loads the delivered OMOP tables into DuckDB and draws Plotly charts of the cohort, its conditions, medications, labs and visits, its imaging and one patient’s record.</p><ul class="caveat how-to" aria-label="How the notebook reads the delivery">
+            <li>The images are read through the lakehouse’s OneLake shortcuts, from the imaging archive that keeps the DICOM files. The reports are the copies in Files/documents.</li>
+            <li>The notebook runs in about a minute in Fabric, including the start of the session.</li>
+          </ul><p>Fig&nbsp;7 follows the research team opening the notebook of request <b>1005</b> and running it.</p></div></div>
+        </div>
+      </header>
+      <div class="chapter-body" id="research-platform-body"><div class="chapter-inner">
+      <div class="bento">
+        <article class="card span-12 uni-card" id="rpCard">
+          <div class="card-head">
+            <div>
+              <div class="eyebrow">Fig 7</div>
+              <h3>Running the Explore notebook</h3>
+              <p class="sub">The charts are those of the 25 patients delivered in demo mode. The images are the delivery’s own, read through its shortcuts.</p>
+            </div>
+          </div>
+          <!-- The app screen on its plate, with the step controls in the plate's top margin -->
+          <div class="cd-plate">
+            <div class="cd-transport">
+              <button type="button" class="btn uni-play" id="rpPlay" aria-pressed="false"></button>
+              <div class="chips" id="rpSteps" role="group" aria-label="Step"></div>
+              <button type="button" class="btn cd-full" aria-pressed="false"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path class="cd-full-in" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/><path class="cd-full-out" d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg><span>Full view</span></button>
+            </div>
+            <div class="cd-view" id="rpView" role="img" aria-label="In Fabric, the research team opens Explore_QM1005_FormerSmokers50LungNodule6mm_Demo from the Cohort requests folder, with the delivery lakehouse attached, and selects Run all. The cells run one by one: the rows delivered, the 25 patients by age, sex and race, the most common conditions and those that occur together, medications by year, each patient’s latest lab results, visits by year, imaging studies by modality and nodule sizes, a chest CT of patient 1000013 with the largest nodule outlined, a chest X-ray, an MR and a pathology slide, a chest X-ray report and the patient’s whole record on one timeline."></div>
+            <div class="cd-plate-cap uni-cap-text" aria-hidden="true"></div>
+          </div>
+          <div class="uni-scroll"><div class="uni-fig">
+            <p class="dv-flow-h">What the notebook reads</p>
+            <div id="rpFlow" role="img" aria-label="The notebook reads its default lakehouse, the delivery lakehouse in OneLake: the 20 Delta tables with DuckDB, the 5 study shortcuts in Files/dicom with pydicom, which point to Bronze_ImagingArchive where the DICOM files are kept, and the 20 copied reports and notes in Files/documents."></div>
+          </div></div>
+          <div class="uni-cap">
+            <div class="uni-cap-text" id="rpCap" aria-live="polite"></div>
+            <dl class="uni-ledger" id="rpLedger">
+              <div data-ledger="cells"><dt>Cells</dt><dd><b>0</b> of 13 cells</dd></div>
+              <div data-ledger="patients"><dt>Patients</dt><dd><b>–</b> patients</dd></div>
+              <div data-ledger="images"><dt>Images</dt><dd><b>–</b> images</dd></div>
+            </dl>
+          </div>
+        </article>
+      </div>
+      </div></div>
+    </section>
+    <section id="patient-360" class="chapter" data-num="07" data-label="Research: Patient 360">
+      <header class="chapter-head">
+        <button type="button" class="chapter-act" aria-expanded="true" aria-controls="patient-360-body"><span class="chapter-act-label">Hide</span><span class="sr-only"> section 07</span><svg class="chapter-chev" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="chapter-stick">
+          <h2 class="chapter-title"><button type="button" class="chapter-toggle" aria-expanded="true" aria-controls="patient-360-body"><span class="sr-only">07 </span><span class="chapter-name">A patient’s whole record in Patient 360</span></button></h2>
+          <div class="chapter-lede"><div><p>Patient 360 is a Fabric App (Rayfin) that puts one patient’s whole record on one page: the Epic visits, problems, orders and results, the studies in the PACS, the DICOM images in the archive, and the typed and scanned reports. It reads each source where it is, through the SQL analytics endpoint of its Patient360 lakehouse, which holds only a patient index and the viewer files made from the DICOM.</p><ul class="caveat how-to" aria-label="What Patient 360 holds">
+            <li><b>3,539</b> hospital patients, all synthetic, and <b>15</b> research patients from TCGA with their tumour genomes and AI lymphocyte maps. <b>27</b> of them are demo patients, picked to show every kind of image.</li>
+            <li>Images open in the record’s own viewers: CT and MRI with the radiologists’ nodule outlines, X-rays, and whole-slide images at up to 40×.</li>
+          </ul><p>Fig&nbsp;8 opens the record of Levi Hills, a demo patient whose screening CT came a year before his lung cancer, then a research patient’s slide and genome.</p></div></div>
+        </div>
+      </header>
+      <div class="chapter-body" id="patient-360-body"><div class="chapter-inner">
+      <div class="bento">
+        <article class="card span-12 uni-card" id="ptCard">
+          <div class="card-head">
+            <div>
+              <div class="eyebrow">Fig 8</div>
+              <h3>Opening a patient’s record</h3>
+              <p class="sub">Levi Hills is a demo patient and Damian Macejkovic a TCGA research patient. The data and images are the app’s own.</p>
+            </div>
+          </div>
+          <!-- The app screen on its plate, with the step controls in the plate's top margin -->
+          <div class="cd-plate">
+            <div class="cd-transport">
+              <button type="button" class="btn uni-play" id="ptPlay" aria-pressed="false"></button>
+              <div class="chips" id="ptSteps" role="group" aria-label="Step"></div>
+              <button type="button" class="btn cd-full" aria-pressed="false"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path class="cd-full-in" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/><path class="cd-full-out" d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg><span>Full view</span></button>
+            </div>
+            <div class="cd-view" id="ptView" role="img" aria-label="In Patient 360, the Patients page lists the demo patients first. Levi Hills’ record opens on a lifetime timeline drawn from 132 visits, his conditions and medications, his cancer course, five PACS studies, a slide and nine documents. Read in place lists the 15 queries that assembled the page from four sources. His screening CT of 18 November 2019 opens in the viewer on the 16.2 mm nodule with the radiologists’ outlines, then moves to the 13.0 mm nodule. His biopsy slide opens and zooms to 20 times. Damian Macejkovic’s diagnostic slide shows the AI lymphocyte map, then his tumour genome with 285 mutations."></div>
+            <div class="cd-plate-cap uni-cap-text" aria-hidden="true"></div>
+          </div>
+          <div class="uni-scroll"><div class="uni-fig">
+            <p class="dv-flow-h">Where the record is read</p>
+            <div id="ptFlow" role="img" aria-label="Patient 360, a Rayfin app, calls its Rayfin functions, which query the Patient360 lakehouse’s SQL analytics endpoint. The endpoint reads Bronze_Clarity (Epic), Bronze_PACS and Bronze_ClinicalDocuments where they are, and the TCGA research lakehouses for research patients. The browser reads the viewer files in OneLake through signed, read-only links."></div>
+          </div></div>
+          <div class="uni-cap">
+            <div class="uni-cap-text" id="ptCap" aria-live="polite"></div>
+            <dl class="uni-ledger" id="ptLedger">
+              <div data-ledger="patients"><dt>Patients</dt><dd><b>–</b> patients</dd></div>
+              <div data-ledger="sources"><dt>Sources</dt><dd><b>–</b> sources</dd></div>
+              <div data-ledger="images"><dt>Viewers</dt><dd><b>–</b> viewers</dd></div>
+            </dl>
+          </div>
+        </article>
+      </div>
+      </div></div>
+    </section>
+    <section id="conversational-insights" class="chapter" data-num="08" data-label="Research: Conversational Insights">
+      <header class="chapter-head">
+        <button type="button" class="chapter-act" aria-expanded="true" aria-controls="conversational-insights-body"><span class="chapter-act-label">Hide</span><span class="sr-only"> section 08</span><svg class="chapter-chev" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="chapter-stick">
+          <h2 class="chapter-title"><button type="button" class="chapter-toggle" aria-expanded="true" aria-controls="conversational-insights-body"><span class="sr-only">08 </span><span class="chapter-name">Asking Copilot about patients</span></button></h2>
+          <div class="chapter-lede"><div><p>Ask is a conversation with GitHub Copilot inside Patient 360, about one patient, several or all of them. Copilot answers with the record’s own viewers drawn in the answer, and the answer lists each step Copilot took, with its time.</p><ul class="caveat how-to" aria-label="How Ask works">
+            <li>Every tool runs in the page, through the same functions and signed links as the record. The chat relay, a Container App running the Copilot SDK, carries the question, the tool calls and their results between the page and Copilot.</li>
+            <li>Each reader signs in with GitHub, so the questions run on their own Copilot plan. The answers are for education and research and leave clinical decisions to the treating team.</li>
+          </ul><p>Fig&nbsp;9 replays two answers from the app’s evaluation as they were recorded: one about Levi Hills, and one comparing two research patients with lung cancer.</p></div></div>
+        </div>
+      </header>
+      <div class="chapter-body" id="conversational-insights-body"><div class="chapter-inner">
+      <div class="bento">
+        <article class="card span-12 uni-card" id="akCard">
+          <div class="card-head">
+            <div>
+              <div class="eyebrow">Fig 9</div>
+              <h3>Two answers from Ask, replayed</h3>
+              <p class="sub">The questions, steps, cards and text are those of the app’s evaluation. The steps are shown faster than they ran.</p>
+            </div>
+          </div>
+          <!-- The app screen on its plate, with the step controls in the plate's top margin -->
+          <div class="cd-plate">
+            <div class="cd-transport">
+              <button type="button" class="btn uni-play" id="akPlay" aria-pressed="false"></button>
+              <div class="chips" id="akSteps" role="group" aria-label="Step"></div>
+              <button type="button" class="btn cd-full" aria-pressed="false"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path class="cd-full-in" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/><path class="cd-full-out" d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg><span>Full view</span></button>
+            </div>
+            <div class="cd-view" id="akView" role="img" aria-label="In Ask, the question about Levi Hills is picked from the suggestions. Copilot searches the patients, reads his record, imaging list and two reports, and opens his CT and his slide: seven steps in 17 seconds. The answer opens with the finding, then shows the CT centred on the 16.2 mm nodule and the biopsy slide, each with a note. The second question compares Jettie Osinski and Damian Macejkovic: nine steps in 23 seconds, then their two tumour genomes, their slides with the AI lymphocyte maps, and their treatment on one timeline aligned at diagnosis."></div>
+            <div class="cd-plate-cap uni-cap-text" aria-hidden="true"></div>
+          </div>
+          <div class="uni-scroll"><div class="uni-fig">
+            <p class="dv-flow-h">How an answer is made</p>
+            <div id="akFlow" role="img" aria-label="The question goes from Ask, in the Patient 360 Rayfin app, to the chat relay patient360-chat in Azure Container Apps, and on to GitHub Copilot. Copilot’s tool calls come back to the page, which runs each one through the record’s functions and signed links against Bronze_Clarity, Bronze_PACS, Bronze_ClinicalDocuments, Patient360 and the research lakehouses in OneLake, and returns the result. The answer streams back the same way."></div>
+          </div></div>
+          <div class="uni-cap">
+            <div class="uni-cap-text" id="akCap" aria-live="polite"></div>
+            <dl class="uni-ledger" id="akLedger">
+              <div data-ledger="questions"><dt>Questions</dt><dd><b>–</b> questions</dd></div>
+              <div data-ledger="steps"><dt>Steps</dt><dd><b>–</b> steps</dd></div>
+              <div data-ledger="cards"><dt>Cards</dt><dd><b>–</b> cards</dd></div>
+            </dl>
+          </div>
+        </article>
+      </div>
+      </div></div>
+    </section>
+    </div>
+    </div>
+
+    <!-- Summary: the whole path in one paragraph, ruled like About this demo -->
+    <section class="doc-sec summary" id="summary" aria-labelledby="summaryTitle">
+      <div class="doc-head">
+        <h2 id="summaryTitle">Summary</h2>
+        <p>The path the demo followed, from the source systems to the research team.</p>
+      </div>
+      <div class="doc-body">
+        <p class="about-text">The EHR tables, the PACS database and the images and documents reached OneLake as Bronze lakehouses and a SQL database. Notebooks built OMOP in Silver_OMOP and i2b2 in Gold_i2b2 from them, and three semantic models in Fabric IQ serve the honest broker, the researchers and the reviewers. GitHub Copilot asked the Cohort Discovery model the study question in plain language and found <b>358</b> patients, shown as 356 ±3.</p>
+        <p class="about-text">The request was approved in a Rayfin app on Fabric. A Data Factory pipeline delivered <b>25</b> of the patients in demo mode to a lakehouse of their own in about two minutes, with their imaging studies linked by shortcut, and the research team explored them in a notebook that runs in about a minute. All of it ran in the workspace MedicalCohortDemo, on one F8 capacity.</p>
+        <p class="about-text">Patient 360, a second Rayfin app in the same workspace, puts one patient’s whole record on one page and reads each source where it is, with the CT, the slides and the tumour genome in their own viewers. On its Ask page GitHub Copilot answers questions about one patient or several with those viewers and lists each step it took.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>
+        <h4>About this presentation</h4>
+        <p>An introduction to Microsoft Fabric, followed by the medical cohort demo in this repository. All patients in the demo are synthetic.</p>
+        <p>Descriptions of Fabric follow Microsoft Learn: <a href="https://learn.microsoft.com/fabric/fundamentals/microsoft-fabric-overview">What is Microsoft Fabric</a>, <a href="https://learn.microsoft.com/fabric/onelake/onelake-shortcuts">OneLake shortcuts</a>, <a href="https://learn.microsoft.com/fabric/mirroring/overview">Mirroring</a>, <a href="https://learn.microsoft.com/fabric/iq/overview">Fabric IQ</a> and the <a href="https://learn.microsoft.com/javascript/api/fabric-apps-sdk-javascript/rayfin-overview">Rayfin SDK</a>.</p>
+      </div>
+      <div>
+        <h4>Icons</h4>
+        <p>Product icons from the official Microsoft Fabric, Azure and Power Platform icon sets, AWS Architecture Icons, Google Cloud product icons and GitHub’s Octicons (GitHub Copilot), used as their terms allow for presentations and diagrams. Databricks and Snowflake marks from Simple Icons. All product names and logos are trademarks of their owners. Governance is shown with the Microsoft Purview icon.</p>
+        <p>The medical images in Fig 7 come from LIDC‑IDRI (chest CT and X‑ray) and TCGA‑BRCA (pathology slide) on NCI Imaging Data Commons, CC BY 3.0, and from the Synthea Coherent Data Set (brain MR), MITRE, CC BY 4.0. Figs 8 and 9 add a LIDC‑IDRI chest CT and a TCGA‑LUSC slide from Imaging Data Commons (CC BY 3.0), two TCGA diagnostic slides from the NCI Genomic Data Commons (open access) and the Stony Brook TCGA lymphocyte maps (CC BY 4.0). Sources and changes: <code>assets/img/NOTICE.md</code>.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/js/main.js"></script>
+  <script src="assets/js/platform.js"></script>
+  <script src="assets/js/figkit.js"></script>
+  <script src="assets/js/unification.js"></script>
+  <script src="assets/js/medallion.js"></script>
+  <script src="assets/js/semantic.js"></script>
+  <script src="assets/js/discovery.js"></script>
+  <script src="assets/js/delivery.js"></script>
+  <script src="assets/js/research.js"></script>
+  <script src="assets/js/p360kit.js"></script>
+  <script src="assets/js/patient360.js"></script>
+  <script src="assets/js/ask.js"></script>
+</body>
+</html>

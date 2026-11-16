@@ -1,0 +1,14 @@
+{
+	"mcpServers": {
+		"FabricIQ": {
+			"type": "http",
+			"url": "https://fabriciq.svc.cloud.microsoft/v1/mcp/fabriciq",
+			"tools": [
+				"*"
+			],
+			"headers": {
+				"X-Variants": "Fabric.Routing.FabricIQ.V1"
+			}
+		}
+	}
+}

@@ -1,0 +1,163 @@
+"""OMOP CDM v5.4 table definitions (plus the OHDSI Medical Imaging extension) used for the Silver_OMOP lakehouse.
+
+Column names and order follow the OHDSI CDM v5.4 specification (https://ohdsi.github.io/CommonDataModel/cdm54.html)
+and the OHDSI Medical Imaging CDM (https://github.com/OHDSI/ImageWG) for IMAGE_OCCURRENCE and IMAGE_FEATURE.
+IMAGE_OCCURRENCE also carries modality_source_value, as in Microsoft's healthcare data solutions.
+Types are DuckDB types: keys BIGINT, concept IDs INTEGER, datetimes TIMESTAMPTZ (written to Delta as UTC timestamps,
+which Direct Lake and the SQL analytics endpoint read natively).
+"""
+
+B, I, D, TS, V, F = "BIGINT", "INTEGER", "DATE", "TIMESTAMPTZ", "VARCHAR", "DOUBLE"
+
+
+def _t(spec: str) -> list[tuple[str, str]]:
+    return [tuple(part.split()) for part in (p.strip() for p in spec.split(",")) if part]
+
+
+CDM = {
+    "person": _t(f"""person_id {B}, gender_concept_id {I}, year_of_birth {I}, month_of_birth {I}, day_of_birth {I},
+        birth_datetime {TS}, race_concept_id {I}, ethnicity_concept_id {I}, location_id {B}, provider_id {B},
+        care_site_id {B}, person_source_value {V}, gender_source_value {V}, gender_source_concept_id {I},
+        race_source_value {V}, race_source_concept_id {I}, ethnicity_source_value {V}, ethnicity_source_concept_id {I}"""),
+    "observation_period": _t(f"""observation_period_id {B}, person_id {B}, observation_period_start_date {D},
+        observation_period_end_date {D}, period_type_concept_id {I}"""),
+    "visit_occurrence": _t(f"""visit_occurrence_id {B}, person_id {B}, visit_concept_id {I}, visit_start_date {D},
+        visit_start_datetime {TS}, visit_end_date {D}, visit_end_datetime {TS}, visit_type_concept_id {I},
+        provider_id {B}, care_site_id {B}, visit_source_value {V}, visit_source_concept_id {I},
+        admitted_from_concept_id {I}, admitted_from_source_value {V}, discharged_to_concept_id {I},
+        discharged_to_source_value {V}, preceding_visit_occurrence_id {B}"""),
+    "visit_detail": _t(f"""visit_detail_id {B}, person_id {B}, visit_detail_concept_id {I}, visit_detail_start_date {D},
+        visit_detail_start_datetime {TS}, visit_detail_end_date {D}, visit_detail_end_datetime {TS},
+        visit_detail_type_concept_id {I}, provider_id {B}, care_site_id {B}, visit_detail_source_value {V},
+        visit_detail_source_concept_id {I}, admitted_from_concept_id {I}, admitted_from_source_value {V},
+        discharged_to_source_value {V}, discharged_to_concept_id {I}, preceding_visit_detail_id {B},
+        parent_visit_detail_id {B}, visit_occurrence_id {B}"""),
+    "condition_occurrence": _t(f"""condition_occurrence_id {B}, person_id {B}, condition_concept_id {I},
+        condition_start_date {D}, condition_start_datetime {TS}, condition_end_date {D}, condition_end_datetime {TS},
+        condition_type_concept_id {I}, condition_status_concept_id {I}, stop_reason {V}, provider_id {B},
+        visit_occurrence_id {B}, visit_detail_id {B}, condition_source_value {V}, condition_source_concept_id {I},
+        condition_status_source_value {V}"""),
+    "drug_exposure": _t(f"""drug_exposure_id {B}, person_id {B}, drug_concept_id {I}, drug_exposure_start_date {D},
+        drug_exposure_start_datetime {TS}, drug_exposure_end_date {D}, drug_exposure_end_datetime {TS},
+        verbatim_end_date {D}, drug_type_concept_id {I}, stop_reason {V}, refills {I}, quantity {F}, days_supply {I},
+        sig {V}, route_concept_id {I}, lot_number {V}, provider_id {B}, visit_occurrence_id {B}, visit_detail_id {B},
+        drug_source_value {V}, drug_source_concept_id {I}, route_source_value {V}, dose_unit_source_value {V}"""),
+    "procedure_occurrence": _t(f"""procedure_occurrence_id {B}, person_id {B}, procedure_concept_id {I},
+        procedure_date {D}, procedure_datetime {TS}, procedure_end_date {D}, procedure_end_datetime {TS},
+        procedure_type_concept_id {I}, modifier_concept_id {I}, quantity {I}, provider_id {B},
+        visit_occurrence_id {B}, visit_detail_id {B}, procedure_source_value {V}, procedure_source_concept_id {I},
+        modifier_source_value {V}"""),
+    "device_exposure": _t(f"""device_exposure_id {B}, person_id {B}, device_concept_id {I},
+        device_exposure_start_date {D}, device_exposure_start_datetime {TS}, device_exposure_end_date {D},
+        device_exposure_end_datetime {TS}, device_type_concept_id {I}, unique_device_id {V}, production_id {V},
+        quantity {I}, provider_id {B}, visit_occurrence_id {B}, visit_detail_id {B}, device_source_value {V},
+        device_source_concept_id {I}, unit_concept_id {I}, unit_source_value {V}, unit_source_concept_id {I}"""),
+    "measurement": _t(f"""measurement_id {B}, person_id {B}, measurement_concept_id {I}, measurement_date {D},
+        measurement_datetime {TS}, measurement_time {V}, measurement_type_concept_id {I}, operator_concept_id {I},
+        value_as_number {F}, value_as_concept_id {I}, unit_concept_id {I}, range_low {F}, range_high {F},
+        provider_id {B}, visit_occurrence_id {B}, visit_detail_id {B}, measurement_source_value {V},
+        measurement_source_concept_id {I}, unit_source_value {V}, unit_source_concept_id {I}, value_source_value {V},
+        measurement_event_id {B}, meas_event_field_concept_id {I}"""),
+    "observation": _t(f"""observation_id {B}, person_id {B}, observation_concept_id {I}, observation_date {D},
+        observation_datetime {TS}, observation_type_concept_id {I}, value_as_number {F}, value_as_string {V},
+        value_as_concept_id {I}, qualifier_concept_id {I}, unit_concept_id {I}, provider_id {B},
+        visit_occurrence_id {B}, visit_detail_id {B}, observation_source_value {V}, observation_source_concept_id {I},
+        unit_source_value {V}, qualifier_source_value {V}, value_source_value {V}, observation_event_id {B},
+        obs_event_field_concept_id {I}"""),
+    "death": _t(f"""person_id {B}, death_date {D}, death_datetime {TS}, death_type_concept_id {I}, cause_concept_id {I},
+        cause_source_value {V}, cause_source_concept_id {I}"""),
+    "note": _t(f"""note_id {B}, person_id {B}, note_date {D}, note_datetime {TS}, note_type_concept_id {I},
+        note_class_concept_id {I}, note_title {V}, note_text {V}, encoding_concept_id {I}, language_concept_id {I},
+        provider_id {B}, visit_occurrence_id {B}, visit_detail_id {B}, note_source_value {V}, note_event_id {B},
+        note_event_field_concept_id {I}"""),
+    "note_nlp": _t(f"""note_nlp_id {B}, note_id {B}, section_concept_id {I}, snippet {V}, "offset" {V},
+        lexical_variant {V}, note_nlp_concept_id {I}, note_nlp_source_concept_id {I}, nlp_system {V}, nlp_date {D},
+        nlp_datetime {TS}, term_exists {V}, term_temporal {V}, term_modifiers {V}"""),
+    "specimen": _t(f"""specimen_id {B}, person_id {B}, specimen_concept_id {I}, specimen_type_concept_id {I},
+        specimen_date {D}, specimen_datetime {TS}, quantity {F}, unit_concept_id {I}, anatomic_site_concept_id {I},
+        disease_status_concept_id {I}, specimen_source_id {V}, specimen_source_value {V}, unit_source_value {V},
+        anatomic_site_source_value {V}, disease_status_source_value {V}"""),
+    "fact_relationship": _t(f"""domain_concept_id_1 {I}, fact_id_1 {B}, domain_concept_id_2 {I}, fact_id_2 {B},
+        relationship_concept_id {I}"""),
+    "location": _t(f"""location_id {B}, address_1 {V}, address_2 {V}, city {V}, state {V}, zip {V}, county {V},
+        location_source_value {V}, country_concept_id {I}, country_source_value {V}, latitude {F}, longitude {F}"""),
+    "care_site": _t(f"""care_site_id {B}, care_site_name {V}, place_of_service_concept_id {I}, location_id {B},
+        care_site_source_value {V}, place_of_service_source_value {V}"""),
+    "provider": _t(f"""provider_id {B}, provider_name {V}, npi {V}, dea {V}, specialty_concept_id {I},
+        care_site_id {B}, year_of_birth {I}, gender_concept_id {I}, provider_source_value {V},
+        specialty_source_value {V}, specialty_source_concept_id {I}, gender_source_value {V},
+        gender_source_concept_id {I}"""),
+    "payer_plan_period": _t(f"""payer_plan_period_id {B}, person_id {B}, payer_plan_period_start_date {D},
+        payer_plan_period_end_date {D}, payer_concept_id {I}, payer_source_value {V}, payer_source_concept_id {I},
+        plan_concept_id {I}, plan_source_value {V}, plan_source_concept_id {I}, sponsor_concept_id {I},
+        sponsor_source_value {V}, sponsor_source_concept_id {I}, family_source_value {V}, stop_reason_concept_id {I},
+        stop_reason_source_value {V}, stop_reason_source_concept_id {I}"""),
+    "cost": _t(f"""cost_id {B}, cost_event_id {B}, cost_domain_id {V}, cost_type_concept_id {I},
+        currency_concept_id {I}, total_charge {F}, total_cost {F}, total_paid {F}, paid_by_payer {F},
+        paid_by_patient {F}, paid_patient_copay {F}, paid_patient_coinsurance {F}, paid_patient_deductible {F},
+        paid_by_primary {F}, paid_ingredient_cost {F}, paid_dispensing_fee {F}, payer_plan_period_id {B},
+        amount_allowed {F}, revenue_code_concept_id {I}, revenue_code_source_value {V}, drg_concept_id {I},
+        drg_source_value {V}"""),
+    "drug_era": _t(f"""drug_era_id {B}, person_id {B}, drug_concept_id {I}, drug_era_start_date {D},
+        drug_era_end_date {D}, drug_exposure_count {I}, gap_days {I}"""),
+    "dose_era": _t(f"""dose_era_id {B}, person_id {B}, drug_concept_id {I}, unit_concept_id {I}, dose_value {F},
+        dose_era_start_date {D}, dose_era_end_date {D}"""),
+    "condition_era": _t(f"""condition_era_id {B}, person_id {B}, condition_concept_id {I}, condition_era_start_date {D},
+        condition_era_end_date {D}, condition_occurrence_count {I}"""),
+    "episode": _t(f"""episode_id {B}, person_id {B}, episode_concept_id {I}, episode_start_date {D},
+        episode_start_datetime {TS}, episode_end_date {D}, episode_end_datetime {TS}, episode_parent_id {B},
+        episode_number {I}, episode_object_concept_id {I}, episode_type_concept_id {I}, episode_source_value {V},
+        episode_source_concept_id {I}"""),
+    "episode_event": _t(f"episode_id {B}, event_id {B}, episode_event_field_concept_id {I}"),
+    "metadata": _t(f"""metadata_id {I}, metadata_concept_id {I}, metadata_type_concept_id {I}, name {V},
+        value_as_string {V}, value_as_concept_id {I}, value_as_number {F}, metadata_date {D}, metadata_datetime {TS}"""),
+    "cdm_source": _t(f"""cdm_source_name {V}, cdm_source_abbreviation {V}, cdm_holder {V}, source_description {V},
+        source_documentation_reference {V}, cdm_etl_reference {V}, source_release_date {D}, cdm_release_date {D},
+        cdm_version {V}, cdm_version_concept_id {I}, vocabulary_version {V}"""),
+    "cohort": _t(f"cohort_definition_id {I}, subject_id {B}, cohort_start_date {D}, cohort_end_date {D}"),
+    "cohort_definition": _t(f"""cohort_definition_id {I}, cohort_definition_name {V}, cohort_definition_description {V},
+        definition_type_concept_id {I}, cohort_definition_syntax {V}, subject_concept_id {I},
+        cohort_initiation_date {D}"""),
+    "image_occurrence": _t(f"""image_occurrence_id {B}, person_id {B}, procedure_occurrence_id {B},
+        visit_occurrence_id {B}, anatomic_site_concept_id {I}, wadors_uri {V}, local_path {V},
+        image_occurrence_date {D}, image_study_uid {V}, image_series_uid {V}, modality_concept_id {I},
+        modality_source_value {V}"""),
+    "image_feature": _t(f"""image_feature_id {B}, person_id {B}, image_occurrence_id {B},
+        image_feature_event_field_concept_id {I}, image_feature_event_id {B}, image_feature_concept_id {I},
+        image_feature_type_concept_id {I}, image_finding_concept_id {I}, image_finding_id {B},
+        anatomic_site_concept_id {I}, alg_system {V}, alg_datetime {TS}"""),
+    "source_to_concept_map": _t(f"""source_code {V}, source_concept_id {I}, source_vocabulary_id {V},
+        source_code_description {V}, target_concept_id {I}, target_vocabulary_id {V}, valid_start_date {D},
+        valid_end_date {D}, invalid_reason {V}"""),
+}
+
+# Standardized vocabularies: loaded as-is from the HDS package (13_omop_vocabulary.py). RELATIONSHIP and
+# DRUG_STRENGTH aren't in that package, so they are created empty.
+VOCAB = {
+    "concept": _t(f"""concept_id {I}, concept_name {V}, domain_id {V}, vocabulary_id {V}, concept_class_id {V},
+        standard_concept {V}, concept_code {V}, valid_start_date {D}, valid_end_date {D}, invalid_reason {V}"""),
+    "vocabulary": _t(f"""vocabulary_id {V}, vocabulary_name {V}, vocabulary_reference {V}, vocabulary_version {V},
+        vocabulary_concept_id {I}"""),
+    "domain": _t(f"domain_id {V}, domain_name {V}, domain_concept_id {I}"),
+    "concept_class": _t(f"concept_class_id {V}, concept_class_name {V}, concept_class_concept_id {I}"),
+    "concept_relationship": _t(f"""concept_id_1 {I}, concept_id_2 {I}, relationship_id {V}, valid_start_date {D},
+        valid_end_date {D}, invalid_reason {V}"""),
+    "relationship": _t(f"""relationship_id {V}, relationship_name {V}, is_hierarchical {V}, defines_ancestry {V},
+        reverse_relationship_id {V}, relationship_concept_id {I}"""),
+    "concept_synonym": _t(f"concept_id {I}, concept_synonym_name {V}, language_concept_id {I}"),
+    "concept_ancestor": _t(f"""ancestor_concept_id {I}, descendant_concept_id {I}, min_levels_of_separation {I},
+        max_levels_of_separation {I}"""),
+    "drug_strength": _t(f"""drug_concept_id {I}, ingredient_concept_id {I}, amount_value {F}, amount_unit_concept_id {I},
+        numerator_value {F}, numerator_unit_concept_id {I}, denominator_value {F}, denominator_unit_concept_id {I},
+        box_size {I}, valid_start_date {D}, valid_end_date {D}, invalid_reason {V}"""),
+}
+VOCAB_FILES = ("concept", "vocabulary", "domain", "concept_class", "concept_relationship", "concept_synonym",
+               "concept_ancestor")
+
+
+# Silver extensions (not OMOP tables): the vocabulary slice that semantic models load instead of the full vocabulary
+EXTENSIONS = {"concept_in_use": VOCAB["concept"], "concept_ancestor_in_use": VOCAB["concept_ancestor"]}
+
+
+def ddl(schema: str, name: str, columns: list[tuple[str, str]]) -> str:
+    return f"CREATE OR REPLACE TABLE {schema}.{name} (" + ", ".join(f"{c} {t}" for c, t in columns) + ")"
